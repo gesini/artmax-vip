@@ -13,7 +13,7 @@ from pathlib import Path
 APP_NAME = "Artmax Cabeleleiros"
 DB_PATH = "artmax.db"
 
-# Coloque sua logo na mesma pasta do app com este nome:
+# (Mantido pra não quebrar nada, mas NÃO vamos mais usar logo no app)
 LOGO_PATH = "logo.png"
 
 st.set_page_config(page_title=APP_NAME, layout="wide", page_icon="💜")
@@ -156,13 +156,33 @@ def apply_ui():
           0 0 24px rgba(142,45,226,0.20);
     }}
 
-    /* Sidebar elegante */
+    /* Sidebar elegante (AGORA OPACA) */
     section[data-testid="stSidebar"] {{
-        background: linear-gradient(180deg, rgba(74,0,224,0.22), rgba(11,11,16,0.96)) !important;
-        border-right: 1px solid rgba(212,175,55,0.16);
+        background: #0B0B10 !important;
+        border-right: 1px solid rgba(212,175,55,0.30) !important;
+        position: relative !important;
+    }}
+    section[data-testid="stSidebar"] > div {{
+        background: #0B0B10 !important;
     }}
     section[data-testid="stSidebar"] * {{
         color: {C_TEXT} !important;
+    }}
+
+    /* Barra para arrastar (resizer) */
+    #sidebar-resizer {{
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 10px;
+        height: 100%;
+        cursor: col-resize;
+        background: rgba(212,175,55,0.10);
+        border-left: 1px solid rgba(212,175,55,0.35);
+        z-index: 9999;
+    }}
+    #sidebar-resizer:hover {{
+        background: rgba(212,175,55,0.20);
     }}
 
     /* Login central */
@@ -208,6 +228,7 @@ def header():
         unsafe_allow_html=True
     )
 
+# (Mantidas, mas não usadas — pra não mexer no resto)
 def logo_exists() -> bool:
     return Path(LOGO_PATH).exists()
 
@@ -320,6 +341,53 @@ def open_whatsapp(link):
 # =========================================================
 apply_ui()
 
+# RESIZER (barra para arrastar a sidebar) - DIRETO NO CÓDIGO
+components.html(
+    """
+    <script>
+      (function () {
+        const sidebar = parent.document.querySelector("section[data-testid='stSidebar']");
+        if (!sidebar) return;
+
+        if (parent.document.getElementById("sidebar-resizer")) return;
+
+        const resizer = parent.document.createElement("div");
+        resizer.id = "sidebar-resizer";
+        sidebar.appendChild(resizer);
+
+        let isResizing = false;
+
+        resizer.addEventListener("mousedown", (e) => {
+          e.preventDefault();
+          isResizing = true;
+          parent.document.body.style.cursor = "col-resize";
+        });
+
+        parent.document.addEventListener("mousemove", (e) => {
+          if (!isResizing) return;
+
+          let newWidth = e.clientX;
+          const minW = 240;
+          const maxW = 520;
+          newWidth = Math.max(minW, Math.min(maxW, newWidth));
+
+          sidebar.style.width = newWidth + "px";
+          sidebar.style.minWidth = newWidth + "px";
+          sidebar.style.maxWidth = newWidth + "px";
+          sidebar.style.flex = "0 0 " + newWidth + "px";
+        });
+
+        parent.document.addEventListener("mouseup", () => {
+          if (!isResizing) return;
+          isResizing = false;
+          parent.document.body.style.cursor = "";
+        });
+      })();
+    </script>
+    """,
+    height=0,
+)
+
 if "auth" not in st.session_state:
     st.session_state.auth = False
 
@@ -333,8 +401,7 @@ if not st.session_state.auth:
 if not st.session_state.auth:
     st.markdown("<div class='login-wrap'><div class='login-card'>", unsafe_allow_html=True)
 
-    if logo_exists():
-        st.image(LOGO_PATH, use_container_width=True)
+    # (REMOVIDO) Logo no login
 
     st.markdown(f"<div class='login-title'>{APP_NAME}</div>", unsafe_allow_html=True)
     st.markdown("<div class='login-sub'>Acesso restrito ao sistema interno.</div>", unsafe_allow_html=True)
@@ -346,7 +413,7 @@ if not st.session_state.auth:
     with colA:
         entrar = st.button("Entrar")
     with colB:
-        st.caption("")
+        st.caption("")  # removido o texto de dica da logo
 
     if entrar:
         if u.strip().lower() == "artmax" and s.strip() == "gesini123":
@@ -361,9 +428,7 @@ if not st.session_state.auth:
 # Banner topo
 header()
 
-# Banner/Logo em cima do menu (SIDEBAR)
-if logo_exists():
-    show_logo(where="sidebar")
+# (REMOVIDO) Logo na sidebar
 st.sidebar.markdown("---")
 
 # Controle mês a mês global (sidebar)
@@ -592,7 +657,7 @@ elif menu == "Relatórios (BI)":
 
     lucro = total_vendas - total_comissao - total_gastos
 
-    # Comissão Evelyn (100% do que ela fez)
+    # Comissão Evelyn (agora 50% do que ela fez, pois comissao já vem calculada)
     if not df_v.empty:
         df_eve = df_v[df_v["profissional"].str.lower() == "evelyn"]
         comissao_evelyn = float(df_eve["comissao"].sum()) if not df_eve.empty else 0.0
