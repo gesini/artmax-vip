@@ -219,11 +219,11 @@ def show_logo(where="main", width=260):
             st.image(LOGO_PATH, width=width)
 
 # =========================================================
-# REGRA: comissão só da Evelyn (100% do que ela fizer)
+# REGRA: comissão só da Evelyn (50% do que ela fizer)
 # =========================================================
 def calc_comissao(profissional: str, valor_venda: float) -> float:
     if profissional.strip().lower() == "evelyn":
-        return float(valor_venda)
+        return float(valor_venda) * 0.5
     return 0.0
 
 # =========================================================
@@ -346,6 +346,7 @@ if not st.session_state.auth:
     with colA:
         entrar = st.button("Entrar")
     with colB:
+        st.caption("")
 
     if entrar:
         if u.strip().lower() == "artmax" and s.strip() == "gesini123":
