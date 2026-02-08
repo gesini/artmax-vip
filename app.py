@@ -12,55 +12,71 @@ from datetime import date
 APP_NAME = "Artmax Cabeleleiros"
 DB_PATH = "artmax.db"
 
-st.set_page_config(page_title=APP_NAME, layout="wide", page_icon="👑")
+st.set_page_config(page_title=APP_NAME, layout="wide", page_icon="💜")
 
 # =========================================================
 # PALETA (roxo + dourado + preto + branco)
 # =========================================================
-C_BG = "#0B0B10"                 # preto elegante
-C_SURFACE = "rgba(255,255,255,0.05)"
-C_BORDER = "rgba(212,175,55,0.22)"  # dourado suave
+C_BG = "#0B0B10"
 C_TEXT = "rgba(255,255,255,0.92)"
-C_MUTED = "rgba(255,255,255,0.70)"
+C_MUTED = "rgba(255,255,255,0.72)"
+C_SURFACE = "rgba(255,255,255,0.055)"
+C_SURFACE_2 = "rgba(255,255,255,0.035)"
 
 C_PURPLE_1 = "#4A00E0"
 C_PURPLE_2 = "#8E2DE2"
 C_GOLD = "#D4AF37"
+C_GOLD_SOFT = "rgba(212,175,55,0.22)"
 C_WHITE = "#FFFFFF"
 
 PROFISSIONAIS = ["Eunides", "Evelyn"]
 SERVICOS = ["Escova", "Progressiva", "Luzes", "Coloração", "Botox", "Corte", "Outros"]
 
 # =========================================================
-# UI
+# UI (feminina / linda / premium)
 # =========================================================
 def apply_ui():
     st.markdown(f"""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600&display=swap');
 
     .stApp {{
-        background: radial-gradient(circle at 30% 0%, rgba(142,45,226,0.22), rgba(11,11,16,0.85) 45%), {C_BG};
+        background:
+          radial-gradient(circle at 20% 0%, rgba(142,45,226,0.28), rgba(11,11,16,0.92) 40%),
+          radial-gradient(circle at 80% 30%, rgba(212,175,55,0.10), rgba(11,11,16,0.0) 45%),
+          {C_BG};
         color: {C_TEXT};
         font-family: 'Inter', sans-serif;
     }}
 
-    /* Header: roxo + dourado */
+    /* Header premium */
     .app-header {{
         background: linear-gradient(135deg, rgba(74,0,224,0.55), rgba(142,45,226,0.35));
-        border: 1px solid {C_BORDER};
+        border: 1px solid {C_GOLD_SOFT};
         padding: 18px 22px;
-        border-radius: 18px;
+        border-radius: 20px;
         margin-bottom: 18px;
-        box-shadow: 0 12px 28px rgba(0,0,0,0.45);
+        box-shadow: 0 16px 40px rgba(0,0,0,0.45);
+        position: relative;
+        overflow: hidden;
+    }}
+    .app-header:before {{
+        content: "";
+        position: absolute;
+        inset: -50%;
+        background: radial-gradient(circle, rgba(212,175,55,0.10), rgba(255,255,255,0.0) 55%);
+        transform: rotate(8deg);
+        pointer-events: none;
     }}
     .app-title {{
-        font-size: 22px;
-        font-weight: 600;
-        letter-spacing: 0.2px;
+        font-family: 'Playfair Display', serif;
+        font-size: 28px;
+        font-weight: 700;
+        letter-spacing: 0.4px;
         color: {C_WHITE};
         margin: 0;
-        line-height: 1.2;
+        line-height: 1.15;
+        text-shadow: 0 8px 22px rgba(0,0,0,0.45);
     }}
     .app-sub {{
         font-size: 13px;
@@ -69,8 +85,8 @@ def apply_ui():
     }}
     .gold-dot {{
         display: inline-block;
-        width: 8px;
-        height: 8px;
+        width: 9px;
+        height: 9px;
         background: {C_GOLD};
         border-radius: 50%;
         margin-right: 10px;
@@ -78,12 +94,21 @@ def apply_ui():
     }}
 
     /* Cards / forms */
-    div[data-testid="stForm"], div[data-testid="stExpander"], div[data-testid="stMetric"], .stTable {{
+    div[data-testid="stForm"], div[data-testid="stExpander"], div[data-testid="stMetric"] {{
         background: {C_SURFACE} !important;
-        border: 1px solid {C_BORDER} !important;
-        border-radius: 18px !important;
+        border: 1px solid {C_GOLD_SOFT} !important;
+        border-radius: 20px !important;
         padding: 18px !important;
         color: {C_TEXT} !important;
+        backdrop-filter: blur(10px);
+    }}
+
+    /* Tabelas */
+    div[data-testid="stDataFrame"] {{
+        background: {C_SURFACE_2} !important;
+        border: 1px solid rgba(255,255,255,0.10) !important;
+        border-radius: 18px !important;
+        padding: 10px !important;
         backdrop-filter: blur(10px);
     }}
 
@@ -101,30 +126,30 @@ def apply_ui():
     input, textarea, div[data-baseweb="select"] {{
         background-color: rgba(255,255,255,0.92) !important;
         color: #101018 !important;
-        border-radius: 12px !important;
+        border-radius: 14px !important;
         font-size: 14px !important;
         font-weight: 500 !important;
     }}
 
-    /* Buttons */
+    /* Buttons dourado */
     .stButton>button {{
         background: linear-gradient(90deg, {C_GOLD}, #B8860B) !important;
         color: #0B0B10 !important;
         border: none !important;
-        border-radius: 12px;
-        height: 46px;
+        border-radius: 14px;
+        height: 48px;
         font-weight: 700;
         transition: 0.15s;
         text-transform: none;
     }}
     .stButton>button:hover {{
         transform: translateY(-1px);
-        box-shadow: 0 10px 24px rgba(212,175,55,0.22);
+        box-shadow: 0 12px 28px rgba(212,175,55,0.22);
     }}
 
-    /* Sidebar */
+    /* Sidebar elegante */
     section[data-testid="stSidebar"] {{
-        background: linear-gradient(180deg, rgba(74,0,224,0.18), rgba(11,11,16,0.95)) !important;
+        background: linear-gradient(180deg, rgba(74,0,224,0.20), rgba(11,11,16,0.96)) !important;
         border-right: 1px solid rgba(212,175,55,0.16);
     }}
     section[data-testid="stSidebar"] * {{
@@ -145,12 +170,12 @@ def header():
     )
 
 # =========================================================
-# REGRA: repasse só da Evelyn (100% do que ela fizer)
+# REGRA: comissão só da Evelyn (100% do que ela fizer)
 # =========================================================
-def calc_repasse(profissional: str, valor_venda: float) -> float:
+def calc_comissao(profissional: str, valor_venda: float) -> float:
     if profissional.strip().lower() == "evelyn":
-        return float(valor_venda)  # 100% dela
-    return 0.0  # Eunides (dona) = sem repasse
+        return float(valor_venda)
+    return 0.0
 
 # =========================================================
 # DB + MIGRAÇÃO
@@ -178,7 +203,7 @@ def init_db():
             valor REAL,
             servico TEXT,
             profissional TEXT,
-            repasse REAL DEFAULT 0
+            comissao REAL DEFAULT 0
         )
     """)
 
@@ -192,8 +217,8 @@ def init_db():
     """)
 
     cols = [r[1] for r in conn.execute("PRAGMA table_info(vendas)").fetchall()]
-    if "repasse" not in cols:
-        conn.execute("ALTER TABLE vendas ADD COLUMN repasse REAL DEFAULT 0")
+    if "comissao" not in cols:
+        conn.execute("ALTER TABLE vendas ADD COLUMN comissao REAL DEFAULT 0")
 
     conn.commit()
     return conn
@@ -207,9 +232,9 @@ def build_whatsapp_link(nome, tel, servico, hora="", tipo="confirmacao"):
     if not tel:
         return None
     msgs = {
-        "confirmacao": f"Olá {nome}! Confirmamos seu horário para {servico} às {hora}.",
-        "lembrete": f"Olá {nome}! Lembrete do seu horário hoje às {hora} ({servico}).",
-        "agradecimento": f"Obrigada pela preferência, {nome}! Foi um prazer atender você ({servico})."
+        "confirmacao": f"Olá {nome}! ✨ Confirmamos seu horário para {servico} às {hora}.",
+        "lembrete": f"Oi {nome}! 💜 Lembrete do seu horário hoje às {hora} ({servico}).",
+        "agradecimento": f"Obrigada pela preferência, {nome}! ✨ Foi um prazer atender você ({servico})."
     }
     msg = msgs.get(tipo, "")
     tel_limpo = "".join(filter(str.isdigit, tel))
@@ -283,7 +308,7 @@ if menu == "Agenda":
 
             link = build_whatsapp_link(cli.strip(), tel.strip(), serv, hr.strftime("%H:%M"), "confirmacao")
             open_whatsapp(link)
-            st.success("Agendamento registrado.")
+            st.success("Agendamento registrado com sucesso.")
             if link:
                 st.link_button("Abrir WhatsApp (se não abriu automaticamente)", link)
 
@@ -337,11 +362,11 @@ elif menu == "Checkout":
                 st.error("Informe um valor maior que zero.")
                 st.stop()
 
-            repasse = calc_repasse(v_prof, float(v_valor))
+            comissao = calc_comissao(v_prof, float(v_valor))
 
             db.execute(
-                "INSERT INTO vendas (data, cliente, valor, servico, profissional, repasse) VALUES (?,?,?,?,?,?)",
-                (date.today().isoformat(), v_cli.strip(), float(v_valor), v_serv, v_prof, float(repasse))
+                "INSERT INTO vendas (data, cliente, valor, servico, profissional, comissao) VALUES (?,?,?,?,?,?)",
+                (date.today().isoformat(), v_cli.strip(), float(v_valor), v_serv, v_prof, float(comissao))
             )
             db.commit()
 
@@ -349,7 +374,7 @@ elif menu == "Checkout":
             open_whatsapp(link)
 
             if v_prof == "Evelyn":
-                st.success(f"Venda registrada. **Evelyn recebeu (repasse): R$ {repasse:.2f}**")
+                st.success(f"Venda registrada. 💜 **Comissão Evelyn: R$ {comissao:.2f}**")
             else:
                 st.success("Venda registrada (Eunides).")
 
@@ -397,30 +422,27 @@ elif menu == "Relatórios (BI)":
 
     if not df_v.empty:
         df_v["valor"] = pd.to_numeric(df_v["valor"], errors="coerce").fillna(0.0)
-        df_v["repasse"] = pd.to_numeric(df_v["repasse"], errors="coerce").fillna(0.0)
+        df_v["comissao"] = pd.to_numeric(df_v["comissao"], errors="coerce").fillna(0.0)
     if not df_g.empty:
         df_g["valor"] = pd.to_numeric(df_g["valor"], errors="coerce").fillna(0.0)
 
     total_vendas = float(df_v["valor"].sum()) if not df_v.empty else 0.0
-    total_repasse = float(df_v["repasse"].sum()) if not df_v.empty else 0.0
+    total_comissao = float(df_v["comissao"].sum()) if not df_v.empty else 0.0
     total_gastos = float(df_g["valor"].sum()) if not df_g.empty else 0.0
 
-    # lucro do salão = tudo que entrou - repasse Evelyn - despesas
-    lucro = total_vendas - total_repasse - total_gastos
+    lucro = total_vendas - total_comissao - total_gastos
 
-    # Evelyn: quanto fez / quanto mereceu
+    # Comissão Evelyn (já é 100% das vendas dela)
     if not df_v.empty:
         df_eve = df_v[df_v["profissional"].str.lower() == "evelyn"]
-        evelyn_fez = float(df_eve["valor"].sum()) if not df_eve.empty else 0.0
-        evelyn_mereceu = float(df_eve["repasse"].sum()) if not df_eve.empty else 0.0
+        comissao_evelyn = float(df_eve["comissao"].sum()) if not df_eve.empty else 0.0
     else:
-        evelyn_fez = 0.0
-        evelyn_mereceu = 0.0
+        comissao_evelyn = 0.0
 
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Faturamento total", f"R$ {total_vendas:.2f}")
-    c2.metric("Evelyn fez", f"R$ {evelyn_fez:.2f}")
-    c3.metric("Evelyn mereceu (repasse)", f"R$ {evelyn_mereceu:.2f}")
+    c2.metric("Comissão Evelyn", f"R$ {comissao_evelyn:.2f}")
+    c3.metric("Despesas", f"R$ {total_gastos:.2f}")
     c4.metric("Lucro do salão", f"R$ {lucro:.2f}")
 
     st.subheader("Detalhe por profissional")
@@ -429,7 +451,7 @@ elif menu == "Relatórios (BI)":
     else:
         resumo = (
             df_v.groupby("profissional", as_index=False)
-               .agg(vendas=("valor", "sum"), repasse=("repasse", "sum"))
+               .agg(vendas=("valor", "sum"), comissao=("comissao", "sum"))
         )
         st.dataframe(resumo, use_container_width=True)
 
