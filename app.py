@@ -346,7 +346,6 @@ if not st.session_state.auth:
     with colA:
         entrar = st.button("Entrar")
     with colB:
-        st.caption("Dica: coloque a logo como `logo.png` na pasta do app.")
 
     if entrar:
         if u.strip().lower() == "artmax" and s.strip() == "gesini123":
