@@ -2,70 +2,64 @@ import sqlite3
 import pandas as pd
 import streamlit as st
 import urllib.parse
-import plotly.express as px
 from datetime import datetime, date, timedelta
 
 # ==========================================
-# DESIGN PREMIUM (FONTES E GRADIENTES)
+# DESIGN IMPERIAL (ROXO, PRETO E OURO)
 # ==========================================
-st.set_page_config(page_title="Artmax Exclusive VIP", layout="wide", page_icon="👑")
-
-# Cores mais sofisticadas
-COLOR_PURPLE = "#8E2DE2" 
-COLOR_DEEP_PURPLE = "#4A00E0"
-COLOR_GOLD = "#D4AF37"   
-COLOR_DARK_BG = "#0E1117"
+st.set_page_config(page_title="Artmax Imperial VIP", layout="wide", page_icon="👑")
 
 def apply_ui():
-    st.markdown(f"""
+    st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@300;400;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Open+Sans:wght@600;800&display=swap');
 
-    .stApp {{ background-color: {COLOR_DARK_BG}; color: #FFFFFF; font-family: 'Poppins', sans-serif; }}
+    /* Fundo e Texto Geral */
+    .stApp { background-color: #000000; color: #FFFFFF; font-family: 'Open Sans', sans-serif; }
     
-    /* Cabeçalho com Degradê e Sombra */
-    .logo-header {{
-        background: linear-gradient(135deg, {COLOR_DEEP_PURPLE}, {COLOR_PURPLE});
-        padding: 40px; border-radius: 0 0 50px 50px;
-        border-bottom: 5px solid {COLOR_GOLD}; text-align: center; 
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 30px;
-    }}
-    .logo-main {{ font-family: 'Playfair Display', serif; font-size: 60px; color: {COLOR_GOLD}; font-weight: bold; letter-spacing: 4px; }}
-    .logo-sub {{ font-size: 18px; color: #E0E0E0; letter-spacing: 2px; text-transform: uppercase; }}
+    /* Cabeçalho de Elite */
+    .header-box {
+        background: linear-gradient(135deg, #4B0082, #6A0DAD);
+        padding: 50px; border-radius: 0 0 40px 40px;
+        border-bottom: 5px solid #FFD700; text-align: center; margin-bottom: 30px;
+    }
+    .main-title { font-family: 'Montserrat', sans-serif; font-size: 65px; color: #FFD700; font-weight: 800; text-shadow: 2px 2px #000; }
+    
+    /* FONTES GRANDES NOS INPUTS E LABELS */
+    label, p, .stMarkdown { font-size: 24px !important; color: #FFD700 !important; font-weight: 800 !important; }
+    
+    /* Caixas de Seleção e Inputs Brancos (Máxima Leitura) */
+    input, select, textarea, div[data-baseweb="select"] { 
+        background-color: #FFFFFF !important; 
+        color: #000000 !important; 
+        font-size: 22px !important; 
+        font-weight: 800 !important;
+        border-radius: 15px !important;
+        height: 60px !important;
+    }
 
-    /* Cartões Flutuantes e Modernos */
-    div[data-testid="stForm"], div[data-testid="stExpander"], .stTable {{
+    /* Botões Dourados de Luxo */
+    .stButton>button {
+        background: linear-gradient(90deg, #FFD700, #DAA520) !important;
+        color: #000000 !important; border-radius: 20px; height: 70px;
+        font-size: 26px !important; font-weight: 800 !important;
+        border: 2px solid #FFFFFF !important; margin-top: 20px;
+    }
+
+    /* Tabelas e Cards */
+    div[data-testid="stForm"] {
         background: rgba(255, 255, 255, 0.05) !important;
-        backdrop-filter: blur(10px);
-        padding: 30px !important; border-radius: 25px !important;
-        border: 1px solid rgba(212, 175, 55, 0.3) !important;
-        color: #FFFFFF !important;
-    }}
-
-    /* Inputs Estilizados */
-    input, select, textarea, div[data-baseweb="select"] {{ 
-        background-color: rgba(255, 255, 255, 0.9) !important; 
-        color: #1a1a1a !important; border-radius: 12px !important;
-        font-size: 18px !important; font-weight: 500 !important;
-    }}
-
-    /* Botão com Efeito de Brilho */
-    .stButton>button {{
-        background: linear-gradient(90deg, {COLOR_GOLD}, #B8860B) !important;
-        color: #000000 !important; border: none !important;
-        border-radius: 15px; height: 55px; font-weight: 700;
-        transition: 0.3s; text-transform: uppercase;
-    }}
-    .stButton>button:hover {{ transform: scale(1.02); box-shadow: 0 5px 15px rgba(212, 175, 55, 0.4); }}
+        border: 2px solid #6A0DAD !important; border-radius: 30px !important;
+        padding: 30px !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
 # ==========================================
-# LÓGICA E BANCO (O QUE NÃO ESTAVA FUNCIONANDO)
+# BANCO DE DADOS E LÓGICA
 # ==========================================
 def init_db():
-    conn = sqlite3.connect("artmax_final_v12.db", check_same_thread=False)
-    # Corrigido: Tabelas criadas com estrutura robusta
+    conn = sqlite3.connect("artmax_imperial.db", check_same_thread=False)
     conn.execute("CREATE TABLE IF NOT EXISTS agenda (id INTEGER PRIMARY KEY AUTOINCREMENT, data TEXT, hora TEXT, cliente TEXT, telefone TEXT, servico TEXT, profissional TEXT)")
     conn.execute("CREATE TABLE IF NOT EXISTS vendas (id INTEGER PRIMARY KEY AUTOINCREMENT, data TEXT, cliente TEXT, valor REAL, servico TEXT, profissional TEXT)")
     conn.execute("CREATE TABLE IF NOT EXISTS gastos (id INTEGER PRIMARY KEY AUTOINCREMENT, data TEXT, descricao TEXT, valor REAL)")
@@ -75,112 +69,77 @@ def init_db():
 db = init_db()
 
 def disparar_whatsapp(nome, tel, servico, hora="", tipo="confirmacao"):
-    if not tel: return # Evita erro se telefone estiver vazio
+    if not tel: return
     
+    # MENSAGENS CARINHOSAS E PROFISSIONAIS
     mensagens = {
-        "confirmacao": f"Olá {nome}! ✨ Confirmamos seu horário para *{servico}* às {hora}. A Artmax Exclusive te espera!",
-        "lembrete": f"Oi {nome}! 👑 Passando para lembrar do seu momento VIP hoje às {hora} ({servico}). Até logo!",
-        "agradecimento": f"Foi um prazer te atender, {nome}! ✨ Esperamos que tenha amado o resultado do seu *{servico}*. Até a próxima! 💜"
+        "confirmacao": f"Olá, {nome}! ✨ É um prazer confirmar seu horário na *Artmax Exclusive*. Agendamos seu(sua) *{servico}* para as {hora}. Mal podemos esperar para te deixar ainda mais maravilhosa! 👑💜",
+        "lembrete": f"Oi, {nome}! ✨ Passando com todo carinho para lembrar que seu momento VIP na Artmax é hoje, às {hora}. Já estamos preparando tudo para você! Até logo! 🎀💇‍♀️",
+        "agradecimento": f"Amamos te receber hoje, {nome}! ✨ Esperamos que você se sinta radiante com seu novo visual. Obrigado por escolher a Artmax! Beijos e até a próxima! 💜🙏"
     }
+    
     msg = mensagens.get(tipo, "")
     tel_limpo = "".join(filter(str.isdigit, tel))
     link = f"https://wa.me/55{tel_limpo}?text={urllib.parse.quote(msg)}"
-    
-    # Script para abrir sem bugar o app
     st.components.v1.html(f"<script>window.open('{link}', '_blank');</script>", height=0)
 
 # ==========================================
-# EXECUÇÃO DO APP
+# INTERFACE PRINCIPAL
 # ==========================================
 apply_ui()
 
 if "auth" not in st.session_state: st.session_state.auth = False
 if not st.session_state.auth:
-    st.markdown("<div class='logo-header'><div class='logo-main'>ARTMAX</div><div class='logo-sub'>Exclusive VIP</div></div>", unsafe_allow_html=True)
-    with st.container():
-        u = st.text_input("Username")
-        s = st.text_input("Password", type="password")
-        if st.button("ENTER SYSTEM"):
-            if u.lower() == "artmax" and s == "gesini123":
-                st.session_state.auth = True
-                st.rerun()
+    st.markdown("<div class='header-box'><div class='main-title'>ARTMAX</div><p style='color:#FFF'>IMPERIAL SYSTEM</p></div>", unsafe_allow_html=True)
+    u = st.text_input("USUÁRIO")
+    s = st.text_input("SENHA", type="password")
+    if st.button("ACESSAR SISTEMA"):
+        if u.lower() == "artmax" and s == "gesini123":
+            st.session_state.auth = True
+            st.rerun()
     st.stop()
 
-# Menu lateral elegante
-menu = st.sidebar.radio("Navegação", ["📅 Agenda", "🤖 Robô VIP", "💰 Checkout", "📉 Despesas", "📊 Business Intelligence"])
+menu = st.sidebar.radio("NAVEGAR", ["📅 AGENDA", "🤖 ROBÔ ARTMAX", "💰 CAIXA", "📉 GASTOS", "📊 RELATÓRIOS"])
 
-# Lógica das abas simplificada para evitar bugs...
-if menu == "📅 Agenda":
-    st.markdown("### 📅 Novo Agendamento")
+if menu == "📅 AGENDA":
+    st.markdown("### 👑 NOVO AGENDAMENTO")
     with st.form("ag", clear_on_submit=True):
+        cli = st.text_input("NOME DA CLIENTE")
+        tel = st.text_input("WHATSAPP (COM DDD)")
+        serv = st.selectbox("SERVIÇO", ["Escova", "Progressiva", "Luzes", "Coloração", "Botox", "Corte", "Outros"])
+        prof = st.radio("PROFISSIONAL", ["Eunides", "Evelyn"], horizontal=True)
         c1, c2 = st.columns(2)
-        cli = c1.text_input("Nome da Cliente")
-        tel = c2.text_input("WhatsApp (Ex: 11999999999)")
-        serv = st.selectbox("Procedimento", ["Escova", "Progressiva", "Luzes", "Coloração", "Botox", "Corte", "Outros"])
-        prof = st.radio("Profissional", ["Eunides", "Evelyn"], horizontal=True)
-        c3, c4 = st.columns(2)
-        dt = c3.date_input("Data", date.today())
-        hr = c4.time_input("Horário")
-        if st.form_submit_button("CONFIRMAR E ENVIAR WHATSAPP"):
+        dt = c1.date_input("DATA", date.today())
+        hr = c2.time_input("HORÁRIO")
+        if st.form_submit_button("SALVAR E NOTIFICAR"):
             db.execute("INSERT INTO agenda (data, hora, cliente, telefone, servico, profissional) VALUES (?,?,?,?,?,?)",
                        (dt.isoformat(), hr.strftime("%H:%M"), cli, tel, serv, prof))
             db.commit()
             disparar_whatsapp(cli, tel, serv, hr.strftime("%H:%M"), "confirmacao")
-            st.success(f"Agendado com sucesso para {cli}!")
+            st.success("AGENDADO!")
 
-elif menu == "🤖 Robô VIP":
-    st.title("🤖 Monitoramento de Horários")
+elif menu == "🤖 ROBÔ ARTMAX":
+    st.title("🤖 LEMBRETES DO DIA")
     hoje = date.today().isoformat()
     df = pd.read_sql("SELECT * FROM agenda WHERE data = ?", db, params=[hoje])
     if df.empty:
-        st.info("Nenhuma cliente para hoje ainda.")
+        st.info("Agenda vazia para hoje.")
     else:
         for _, r in df.iterrows():
-            st.write(f"📌 **{r['hora']}** - {r['cliente']} ({r['servico']})")
-            if st.button(f"Enviar Lembrete 2h: {r['cliente']}", key=r['id']):
+            st.write(f"⭐ **{r['hora']}** - {r['cliente']} ({r['servico']})")
+            if st.button(f"MANDAR CARINHO: {r['cliente']}", key=r['id']):
                 disparar_whatsapp(r['cliente'], r['telefone'], r['servico'], r['hora'], "lembrete")
 
-elif menu == "💰 Checkout":
-    st.title("💰 Finalizar Atendimento")
+elif menu == "💰 CAIXA":
+    st.title("💰 FINALIZAR ATENDIMENTO")
     with st.form("caixa"):
-        v_cli = st.text_input("Nome da Cliente")
-        v_tel = st.text_input("WhatsApp")
-        v_serv = st.selectbox("Serviço Realizado", ["Escova", "Progressiva", "Luzes", "Coloração", "Botox", "Corte", "Outros"])
-        v_prof = st.selectbox("Atendida por", ["Eunides", "Evelyn"])
-        v_valor = st.number_input("Valor Final (R$)", min_value=0.0, format="%.2f")
-        if st.form_submit_button("CONCLUIR VENDA"):
+        v_cli = st.text_input("NOME DA CLIENTE")
+        v_tel = st.text_input("WHATSAPP")
+        v_serv = st.selectbox("SERVIÇO FEITO", ["Escova", "Progressiva", "Luzes", "Coloração", "Botox", "Corte", "Outros"])
+        v_prof = st.radio("QUEM ATENDEU?", ["Eunides", "Evelyn"], horizontal=True)
+        v_val = st.number_input("VALOR TOTAL R$", min_value=0.0)
+        if st.form_submit_button("CONCLUIR E AGRADECER"):
             db.execute("INSERT INTO vendas (data, cliente, valor, servico, profissional) VALUES (?,?,?,?,?)",
-                       (date.today().isoformat(), v_cli, v_valor, v_serv, v_prof))
+                       (date.today().isoformat(), v_cli, v_val, v_serv, v_prof))
             db.commit()
             disparar_whatsapp(v_cli, v_tel, v_serv, "", "agradecimento")
-            st.balloons()
-
-elif menu == "📉 Despesas":
-    st.title("📉 Lançar Gastos do Salão")
-    with st.form("gastos"):
-        desc = st.text_input("O que foi comprado?")
-        val = st.number_input("Valor (R$)", min_value=0.0)
-        if st.form_submit_button("REGISTRAR DESPESA"):
-            db.execute("INSERT INTO gastos (data, descricao, valor) VALUES (?,?,?)",
-                       (date.today().isoformat(), desc, val))
-            db.commit()
-            st.error(f"Gasto de R$ {val} registrado.")
-
-elif menu == "📊 Business Intelligence":
-    st.title("📊 Desempenho Artmax")
-    df_v = pd.read_sql("SELECT * FROM vendas", db)
-    df_g = pd.read_sql("SELECT * FROM gastos", db)
-    
-    total_vendas = df_v['valor'].sum() if not df_v.empty else 0
-    total_gastos = df_g['valor'].sum() if not df_g.empty else 0
-    lucro = total_vendas - total_gastos
-    
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Faturamento", f"R$ {total_vendas:.2f}")
-    c2.metric("Gastos", f"R$ {total_gastos:.2f}")
-    c3.metric("Lucro Real", f"R$ {lucro:.2f}", delta_color="normal")
-    
-    if not df_v.empty:
-        fig = px.pie(df_v, values='valor', names='profissional', title="Vendas por Profissional",
-                     color_discrete_sequence=[COLOR_GOLD, COLOR_PURPLE])
-        st.plotly_chart(fig)
