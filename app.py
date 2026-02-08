@@ -1,178 +1,439 @@
 import sqlite3
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 import urllib.parse
 import plotly.express as px
-from datetime import datetime, date, timedelta
+from datetime import date
+from typing import Dict, Any
 
-# ==========================================
-# DESIGN ELITE (PRETO, ROXO E OURO) - LETRAS GIGANTES
-# ==========================================
-st.set_page_config(page_title="Artmax Pro Business", layout="wide", page_icon="👑")
+# =========================================================
+# CONFIG
+# =========================================================
+APP_NAME = "Artmax Cabeleleiros"
+DB_PATH = "artmax.db"
+
+st.set_page_config(page_title=APP_NAME, layout="wide", page_icon="🟦")
+
+# =========================================================
+# UI (formal / profissional)
+# =========================================================
+COLOR_BG = "#0B1220"
+COLOR_SURFACE = "rgba(255,255,255,0.06)"
+COLOR_BORDER = "rgba(255,255,255,0.10)"
+COLOR_TEXT = "rgba(255,255,255,0.92)"
+COLOR_MUTED = "rgba(255,255,255,0.72)"
+COLOR_ACCENT = "#8AB4F8"  # azul leve, formal
 
 def apply_ui():
-    st.markdown("""
+    st.markdown(f"""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@800&family=Open+Sans:wght@700;800&display=swap');
-    .stApp { background-color: #000000; color: #FFFFFF; font-family: 'Open Sans', sans-serif; }
-    
-    .header-box {
-        background: linear-gradient(135deg, #4B0082, #6A0DAD);
-        padding: 30px; border-radius: 0 0 30px 30px;
-        border-bottom: 5px solid #FFD700; text-align: center; margin-bottom: 20px;
-    }
-    .main-title { font-family: 'Montserrat', sans-serif; font-size: 55px; color: #FFD700; font-weight: 800; }
-    
-    /* FONTES GIGANTES PARA CELULAR */
-    label, p, .stMarkdown { font-size: 28px !important; color: #FFD700 !important; font-weight: 800 !important; }
-    
-    /* INPUTS BRANCOS (MÁXIMA LEITURA) */
-    input, select, textarea, div[data-baseweb="select"] { 
-        background-color: #FFFFFF !important; color: #000000 !important; 
-        font-size: 26px !important; font-weight: 800 !important;
-        border-radius: 12px !important; height: 65px !important;
-    }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 
-    .stButton>button {
-        background: linear-gradient(90deg, #FFD700, #DAA520) !important;
-        color: #000000 !important; border-radius: 15px; height: 85px;
-        font-size: 30px !important; font-weight: 800 !important;
-        border: 3px solid #FFFFFF !important;
-    }
-    
-    div[data-testid="stForm"] {
-        background: rgba(255, 255, 255, 0.05) !important;
-        border: 3px solid #6A0DAD !important; border-radius: 30px !important;
-    }
+    .stApp {{
+        background: {COLOR_BG};
+        color: {COLOR_TEXT};
+        font-family: 'Inter', sans-serif;
+    }}
+
+    /* Header clean */
+    .app-header {{
+        background: linear-gradient(180deg, rgba(138,180,248,0.18), rgba(255,255,255,0.00));
+        border: 1px solid {COLOR_BORDER};
+        padding: 18px 22px;
+        border-radius: 16px;
+        margin-bottom: 18px;
+    }}
+    .app-title {{
+        font-size: 22px;
+        font-weight: 600;
+        letter-spacing: 0.2px;
+        color: {COLOR_TEXT};
+        margin: 0;
+        line-height: 1.2;
+    }}
+    .app-sub {{
+        font-size: 13px;
+        color: {COLOR_MUTED};
+        margin-top: 6px;
+    }}
+
+    /* Cards / forms */
+    div[data-testid="stForm"], div[data-testid="stExpander"], div[data-testid="stMetric"], .stTable {{
+        background: {COLOR_SURFACE} !important;
+        border: 1px solid {COLOR_BORDER} !important;
+        border-radius: 16px !important;
+        padding: 18px !important;
+        color: {COLOR_TEXT} !important;
+    }}
+
+    /* FIX DO SEU PRINT: força contraste do st.metric */
+    div[data-testid="stMetric"] * {{
+        color: {COLOR_TEXT} !important;
+        opacity: 1 !important;
+    }}
+    div[data-testid="stMetric"] label, div[data-testid="stMetric"] small {{
+        color: {COLOR_MUTED} !important;
+    }}
+
+    /* Inputs */
+    input, textarea, div[data-baseweb="select"] {{
+        background-color: rgba(255,255,255,0.92) !important;
+        color: #0B1220 !important;
+        border-radius: 12px !important;
+        font-size: 14px !important;
+        font-weight: 500 !important;
+    }}
+
+    /* Buttons */
+    .stButton>button {{
+        background: {COLOR_ACCENT} !important;
+        color: #0B1220 !important;
+        border: none !important;
+        border-radius: 12px;
+        height: 46px;
+        font-weight: 600;
+        transition: 0.15s;
+        text-transform: none;
+    }}
+    .stButton>button:hover {{
+        transform: translateY(-1px);
+        box-shadow: 0 8px 22px rgba(138,180,248,0.18);
+    }}
+
+    /* Sidebar clean */
+    section[data-testid="stSidebar"] {{
+        background: rgba(255,255,255,0.03) !important;
+        border-right: 1px solid {COLOR_BORDER};
+    }}
+    section[data-testid="stSidebar"] * {{
+        color: {COLOR_TEXT} !important;
+    }}
     </style>
     """, unsafe_allow_html=True)
 
-# ==========================================
-# BANCO DE DADOS
-# ==========================================
+def header():
+    st.markdown(
+        f"""
+        <div class="app-header">
+            <div class="app-title">{APP_NAME}</div>
+            <div class="app-sub">Agenda • Atendimento • Financeiro • Relatórios</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+# =========================================================
+# COMISSÃO POR PROCEDIMENTO (VOCÊ VAI PREENCHER)
+# Pode ser:
+# - percentual (rate): ex.: 0.35 = 35%
+# - valor fixo (fixed): ex.: 60.0 = R$ 60 por procedimento
+# =========================================================
+COMMISSION_RULES: Dict[str, Dict[str, Any]] = {
+    # EXEMPLOS — TROQUE PELOS VALORES CORRETOS QUE VOCÊ VAI ME PASSAR:
+    "Escova":      {"type": "fixed", "value": 0.0},
+    "Progressiva": {"type": "fixed", "value": 0.0},
+    "Luzes":       {"type": "fixed", "value": 0.0},
+    "Coloração":   {"type": "fixed", "value": 0.0},
+    "Botox":       {"type": "fixed", "value": 0.0},
+    "Corte":       {"type": "fixed", "value": 0.0},
+    "Outros":      {"type": "rate",  "value": 0.0},  # exemplo: percentual
+}
+
+SERVICOS = list(COMMISSION_RULES.keys())
+PROFISSIONAIS = ["Eunides", "Evelyn"]
+
+def calc_repasse(servico: str, valor_venda: float) -> float:
+    rule = COMMISSION_RULES.get(servico, {"type": "rate", "value": 0.0})
+    t = rule.get("type")
+    v = float(rule.get("value", 0.0))
+    if t == "fixed":
+        return max(0.0, v)
+    if t == "rate":
+        return max(0.0, valor_venda * v)
+    return 0.0
+
+# =========================================================
+# DB + MIGRAÇÃO
+# =========================================================
 def init_db():
-    conn = sqlite3.connect("artmax_final_v99.db", check_same_thread=False)
-    conn.execute("CREATE TABLE IF NOT EXISTS agenda (id INTEGER PRIMARY KEY AUTOINCREMENT, data TEXT, hora TEXT, cliente TEXT, telefone TEXT, servico TEXT, profissional TEXT)")
-    conn.execute("CREATE TABLE IF NOT EXISTS vendas (id INTEGER PRIMARY KEY AUTOINCREMENT, data TEXT, cliente TEXT, valor REAL, servico TEXT, profissional TEXT)")
-    conn.execute("CREATE TABLE IF NOT EXISTS gastos (id INTEGER PRIMARY KEY AUTOINCREMENT, data TEXT, descricao TEXT, valor REAL)")
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS agenda (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            data TEXT,
+            hora TEXT,
+            cliente TEXT,
+            telefone TEXT,
+            servico TEXT,
+            profissional TEXT
+        )
+    """)
+
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS vendas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            data TEXT,
+            cliente TEXT,
+            valor REAL,
+            servico TEXT,
+            profissional TEXT,
+            repasse REAL DEFAULT 0
+        )
+    """)
+
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS gastos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            data TEXT,
+            descricao TEXT,
+            valor REAL
+        )
+    """)
+
+    # garante coluna repasse em bases antigas
+    cols = [r[1] for r in conn.execute("PRAGMA table_info(vendas)").fetchall()]
+    if "repasse" not in cols:
+        conn.execute("ALTER TABLE vendas ADD COLUMN repasse REAL DEFAULT 0")
+
     conn.commit()
     return conn
 
 db = init_db()
 
-def disparar_whatsapp(nome, tel, servico, hora="", tipo="confirmacao"):
-    if not tel: return
-    mensagens = {
-        "confirmacao": f"Olá {nome}! ✨ Confirmamos seu horário na *Artmax* para *{servico}* às {hora}. Mal podemos esperar para te deixar maravilhosa! 👑💜",
-        "lembrete": f"Oi {nome}! ✨ Passando com todo carinho para lembrar que seu momento VIP na Artmax é hoje, às {hora}. Já estamos te esperando! 🎀💇‍♀️",
-        "agradecimento": f"Amamos te receber hoje, {nome}! ✨ Esperamos que você se sinta radiante. Obrigado por escolher a Artmax! Beijos e até a próxima! 💜🙏"
-    }
-    msg = mensagens.get(tipo, "")
-    tel_limpo = "".join(filter(str.isdigit, tel))
-    link = f"https://wa.me/55{tel_limpo}?text={urllib.parse.quote(msg)}"
-    st.components.v1.html(f"<script>window.open('{link}', '_blank');</script>", height=0)
+# =========================================================
+# WhatsApp
+# =========================================================
+def build_whatsapp_link(nome, tel, servico, hora="", tipo="confirmacao"):
+    if not tel:
+        return None
 
-# ==========================================
-# INTERFACE
-# ==========================================
+    msgs = {
+        "confirmacao": f"Olá {nome}. Confirmamos seu horário para {servico} às {hora}.",
+        "lembrete": f"Olá {nome}. Lembrete do seu horário hoje às {hora} ({servico}).",
+        "agradecimento": f"Obrigado pela preferência, {nome}. Foi um prazer atender você ({servico})."
+    }
+    msg = msgs.get(tipo, "")
+    tel_limpo = "".join(filter(str.isdigit, tel))
+    if not tel_limpo:
+        return None
+    return f"https://wa.me/55{tel_limpo}?text={urllib.parse.quote(msg)}"
+
+def open_whatsapp(link):
+    if not link:
+        return
+    components.html(f"<script>window.open('{link}', '_blank');</script>", height=0)
+
+# =========================================================
+# APP
+# =========================================================
 apply_ui()
 
-if "auth" not in st.session_state: st.session_state.auth = False
+if "auth" not in st.session_state:
+    st.session_state.auth = False
+
 if not st.session_state.auth:
-    st.markdown("<div class='header-box'><div class='main-title'>ARTMAX PRO</div></div>", unsafe_allow_html=True)
-    u = st.text_input("USUÁRIO")
-    s = st.text_input("SENHA", type="password")
-    if st.button("ACESSAR"):
-        if u.lower() == "artmax" and s == "gesini123":
+    header()
+    st.caption("Acesso restrito.")
+    u = st.text_input("Usuário")
+    s = st.text_input("Senha", type="password")
+    if st.button("Entrar"):
+        if u.strip().lower() == "artmax" and s.strip() == "gesini123":
             st.session_state.auth = True
             st.rerun()
+        else:
+            st.error("Credenciais inválidas.")
     st.stop()
 
-menu = st.sidebar.radio("MENU", ["📅 AGENDA", "🤖 ROBÔ", "💰 CAIXA", "📉 GASTOS", "📊 RELATÓRIOS & COMISSÃO"])
+header()
 
-# --- AGENDA ---
-if menu == "📅 AGENDA":
-    st.markdown("### 👑 NOVO AGENDAMENTO")
+menu = st.sidebar.radio(
+    "Menu",
+    ["Agenda", "Robô de Lembretes", "Checkout", "Despesas", "Relatórios (BI)"]
+)
+
+# =========================================================
+# Agenda
+# =========================================================
+if menu == "Agenda":
+    st.subheader("Novo agendamento")
     with st.form("ag", clear_on_submit=True):
-        cli = st.text_input("NOME DA CLIENTE")
-        tel = st.text_input("WHATSAPP (DDD+NÚMERO)")
-        serv = st.selectbox("SERVIÇO", ["Escova", "Progressiva", "Luzes", "Coloração", "Botox", "Corte", "Outros"])
-        prof = st.radio("PROFISSIONAL", ["Eunides", "Evelyn"], horizontal=True)
         c1, c2 = st.columns(2)
-        dt = c1.date_input("DATA", date.today())
-        hr = c2.time_input("HORÁRIO")
-        if st.form_submit_button("SALVAR E NOTIFICAR"):
-            db.execute("INSERT INTO agenda (data, hora, cliente, telefone, servico, profissional) VALUES (?,?,?,?,?,?)",
-                       (dt.isoformat(), hr.strftime("%H:%M"), cli, tel, serv, prof))
-            db.commit()
-            disparar_whatsapp(cli, tel, serv, hr.strftime("%H:%M"), "confirmacao")
-            st.success("AGENDADO!")
+        cli = c1.text_input("Cliente")
+        tel = c2.text_input("WhatsApp")
 
-# --- ROBÔ ---
-elif menu == "🤖 ROBÔ":
-    st.title("🤖 LEMBRETES DO DIA")
+        serv = st.selectbox("Procedimento", SERVICOS)
+        prof = st.selectbox("Profissional", PROFISSIONAIS)
+
+        c3, c4 = st.columns(2)
+        dt = c3.date_input("Data", date.today())
+        hr = c4.time_input("Horário")
+
+        if st.form_submit_button("Confirmar e enviar WhatsApp"):
+            if not cli.strip():
+                st.error("Informe o nome do cliente.")
+                st.stop()
+            if not tel.strip():
+                st.error("Informe o WhatsApp.")
+                st.stop()
+
+            db.execute(
+                "INSERT INTO agenda (data, hora, cliente, telefone, servico, profissional) VALUES (?,?,?,?,?,?)",
+                (dt.isoformat(), hr.strftime("%H:%M"), cli.strip(), tel.strip(), serv, prof)
+            )
+            db.commit()
+
+            link = build_whatsapp_link(cli.strip(), tel.strip(), serv, hr.strftime("%H:%M"), "confirmacao")
+            open_whatsapp(link)
+            st.success("Agendamento registrado.")
+            if link:
+                st.link_button("Abrir WhatsApp (se não abriu automaticamente)", link)
+
+    st.subheader("Próximos agendamentos")
+    df_next = pd.read_sql(
+        "SELECT * FROM agenda WHERE data >= ? ORDER BY data, hora LIMIT 30",
+        db,
+        params=[date.today().isoformat()]
+    )
+    if df_next.empty:
+        st.info("Nenhum agendamento futuro.")
+    else:
+        st.dataframe(df_next, use_container_width=True)
+
+# =========================================================
+# Robô
+# =========================================================
+elif menu == "Robô de Lembretes":
+    st.subheader("Agendamentos de hoje")
     hoje = date.today().isoformat()
-    df = pd.read_sql("SELECT * FROM agenda WHERE data = ?", db, params=[hoje])
+    df = pd.read_sql("SELECT * FROM agenda WHERE data = ? ORDER BY hora", db, params=[hoje])
+
     if df.empty:
-        st.info("NENHUMA CLIENTE PARA HOJE AINDA. ✨")
+        st.info("Nenhum agendamento para hoje.")
     else:
         for _, r in df.iterrows():
-            st.write(f"⭐ **{r['hora']}** - {r['cliente']} ({r['servico']})")
-            if st.button(f"AVISAR: {r['cliente']}", key=r['id']):
-                disparar_whatsapp(r['cliente'], r['telefone'], r['servico'], r['hora'], "lembrete")
+            st.write(f"• {r['hora']} — {r['cliente']} — {r['servico']} — {r['profissional']}")
+            if st.button("Enviar lembrete", key=f"lem_{r['id']}"):
+                link = build_whatsapp_link(r["cliente"], r["telefone"], r["servico"], r["hora"], "lembrete")
+                open_whatsapp(link)
+                if link:
+                    st.link_button("Abrir WhatsApp (fallback)", link)
 
-# --- CAIXA ---
-elif menu == "💰 CAIXA":
-    st.title("💰 FINALIZAR ATENDIMENTO")
-    with st.form("cx", clear_on_submit=True):
-        v_cli = st.text_input("NOME DA CLIENTE")
-        v_tel = st.text_input("WHATSAPP")
-        v_serv = st.selectbox("SERVIÇO FEITO", ["Escova", "Progressiva", "Luzes", "Coloração", "Botox", "Corte", "Outros"])
-        v_prof = st.radio("QUEM ATENDEU?", ["Eunides", "Evelyn"], horizontal=True)
-        v_val = st.number_input("VALOR TOTAL R$", min_value=0.0)
-        if st.form_submit_button("CONCLUIR E AGRADECER"):
-            db.execute("INSERT INTO vendas (data, cliente, valor, servico, profissional) VALUES (?,?,?,?,?)",
-                       (date.today().isoformat(), v_cli, v_val, v_serv, v_prof))
-            db.commit()
-            disparar_whatsapp(v_cli, v_tel, v_serv, "", "agradecimento")
-            st.success("VENDA REGISTRADA!")
+# =========================================================
+# Checkout
+# =========================================================
+elif menu == "Checkout":
+    st.subheader("Finalizar atendimento")
+    with st.form("caixa", clear_on_submit=True):
+        v_cli = st.text_input("Cliente")
+        v_tel = st.text_input("WhatsApp (opcional)")
+        v_serv = st.selectbox("Procedimento", SERVICOS)
+        v_prof = st.selectbox("Profissional", PROFISSIONAIS)
+        v_valor = st.number_input("Valor (R$)", min_value=0.0, format="%.2f")
 
-# --- GASTOS ---
-elif menu == "📉 GASTOS":
-    st.title("📉 LANÇAR DESPESAS")
-    with st.form("gs"):
-        desc = st.text_input("DESCRIÇÃO DO GASTO")
-        val = st.number_input("VALOR R$", min_value=0.0)
-        if st.form_submit_button("SALVAR GASTO"):
-            db.execute("INSERT INTO gastos (data, descricao, valor) VALUES (?,?,?)", (date.today().isoformat(), desc, val))
+        if st.form_submit_button("Concluir"):
+            if not v_cli.strip():
+                st.error("Informe o nome do cliente.")
+                st.stop()
+            if v_valor <= 0:
+                st.error("Informe um valor maior que zero.")
+                st.stop()
+
+            repasse = calc_repasse(v_serv, float(v_valor))
+
+            db.execute(
+                "INSERT INTO vendas (data, cliente, valor, servico, profissional, repasse) VALUES (?,?,?,?,?,?)",
+                (date.today().isoformat(), v_cli.strip(), float(v_valor), v_serv, v_prof, float(repasse))
+            )
             db.commit()
-            st.success("GASTO SALVO!")
-    df_g = pd.read_sql("SELECT * FROM gastos ORDER BY id DESC LIMIT 5", db)
+
+            link = build_whatsapp_link(v_cli.strip(), v_tel.strip(), v_serv, "", "agradecimento")
+            open_whatsapp(link)
+
+            st.success(f"Venda registrada. Repasse calculado: R$ {repasse:.2f}")
+            if link:
+                st.link_button("Abrir WhatsApp (se não abriu automaticamente)", link)
+
+# =========================================================
+# Despesas
+# =========================================================
+elif menu == "Despesas":
+    st.subheader("Registrar despesa")
+    with st.form("gastos", clear_on_submit=True):
+        desc = st.text_input("Descrição")
+        val = st.number_input("Valor (R$)", min_value=0.0, format="%.2f")
+        if st.form_submit_button("Registrar"):
+            if not desc.strip():
+                st.error("Informe a descrição.")
+                st.stop()
+            if val <= 0:
+                st.error("Informe um valor maior que zero.")
+                st.stop()
+
+            db.execute(
+                "INSERT INTO gastos (data, descricao, valor) VALUES (?,?,?)",
+                (date.today().isoformat(), desc.strip(), float(val))
+            )
+            db.commit()
+            st.success("Despesa registrada.")
+
+    st.subheader("Últimas despesas")
+    df_g = pd.read_sql("SELECT * FROM gastos ORDER BY data DESC, id DESC LIMIT 20", db)
     if df_g.empty:
-        st.info("NENHUM GASTO LANÇADO AINDA. TUDO LIMPO! ✨")
+        st.info("Sem despesas cadastradas.")
     else:
-        st.table(df_g[['data', 'descricao', 'valor']])
+        st.dataframe(df_g, use_container_width=True)
 
-# --- RELATÓRIOS E COMISSÃO ---
-elif menu == "📊 RELATÓRIOS & COMISSÃO":
-    st.title("📊 FINANCEIRO E COMISSÕES")
+# =========================================================
+# BI
+# =========================================================
+elif menu == "Relatórios (BI)":
+    st.subheader("Resumo financeiro")
+
     df_v = pd.read_sql("SELECT * FROM vendas", db)
     df_g = pd.read_sql("SELECT * FROM gastos", db)
-    
-    total = df_v['valor'].sum() if not df_v.empty else 0.0
-    gastos = df_g['valor'].sum() if not df_g.empty else 0.0
-    
-    c1, c2, c3 = st.columns(3)
-    c1.metric("FATURAMENTO", f"R$ {total:.2f}")
-    c2.metric("GASTOS", f"R$ {gastos:.2f}")
-    c3.metric("LUCRO LÍQUIDO", f"R$ {total - gastos:.2f}")
 
-    st.divider()
-    st.subheader("💰 COMISSÃO DA EVELYN (50%)")
+    if not df_v.empty:
+        df_v["valor"] = pd.to_numeric(df_v["valor"], errors="coerce").fillna(0.0)
+        df_v["repasse"] = pd.to_numeric(df_v["repasse"], errors="coerce").fillna(0.0)
+    if not df_g.empty:
+        df_g["valor"] = pd.to_numeric(df_g["valor"], errors="coerce").fillna(0.0)
+
+    total_vendas = float(df_v["valor"].sum()) if not df_v.empty else 0.0
+    total_repasse = float(df_v["repasse"].sum()) if not df_v.empty else 0.0
+    total_gastos = float(df_g["valor"].sum()) if not df_g.empty else 0.0
+    lucro = total_vendas - total_repasse - total_gastos
+
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Faturamento", f"R$ {total_vendas:.2f}")
+    c2.metric("Repasse a profissionais", f"R$ {total_repasse:.2f}")
+    c3.metric("Despesas", f"R$ {total_gastos:.2f}")
+    c4.metric("Lucro", f"R$ {lucro:.2f}")
+
+    st.subheader("Vendas por profissional")
     if df_v.empty:
-        st.info("SEM VENDAS PARA CALCULAR COMISSÕES AINDA. 🚀")
+        st.info("Sem vendas registradas.")
     else:
-        vendas_ev = df_v[df_v['profissional'] == 'Evelyn']['valor'].sum()
-        st.warning(f"TOTAL EVELYN: R$ {vendas_ev:.2f} | COMISSÃO (50%): R$ {vendas_ev * 0.5:.2f}")
-        fig = px.pie(df_v, values='valor', names='profissional', color_discrete_sequence=['#FFD700', '#6A0DAD'])
+        resumo = (
+            df_v.groupby("profissional", as_index=False)
+               .agg(vendas=("valor", "sum"), repasse=("repasse", "sum"))
+        )
+        st.dataframe(resumo, use_container_width=True)
+
+        fig = px.bar(
+            resumo,
+            x="profissional",
+            y="vendas",
+            title="Faturamento por profissional"
+        )
         st.plotly_chart(fig, use_container_width=True)
+
+    st.subheader("Últimas vendas")
+    if df_v.empty:
+        st.info("Sem vendas registradas.")
+    else:
+        st.dataframe(
+            df_v.sort_values(["data", "id"], ascending=[False, False]).head(25),
+            use_container_width=True
+        )
