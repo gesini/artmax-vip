@@ -4,17 +4,13 @@ import streamlit as st
 import streamlit.components.v1 as components
 import urllib.parse
 import plotly.express as px
-from datetime import date, datetime, timedelta
-from pathlib import Path
+from datetime import date, timedelta
 
 # =========================================================
 # CONFIG
 # =========================================================
 APP_NAME = "Artmax Cabeleleiros"
 DB_PATH = "artmax.db"
-
-# (Mantido pra não quebrar nada, mas NÃO vamos mais usar logo no app)
-LOGO_PATH = "logo.png"
 
 st.set_page_config(page_title=APP_NAME, layout="wide", page_icon="💜")
 
@@ -37,7 +33,7 @@ PROFISSIONAIS = ["Eunides", "Evelyn"]
 SERVICOS = ["Escova", "Progressiva", "Luzes", "Coloração", "Botox", "Corte", "Outros"]
 
 # =========================================================
-# UI (feminina / premium + glow)
+# UI (premium + sidebar opaca + resizer)
 # =========================================================
 def apply_ui():
     st.markdown(f"""
@@ -53,7 +49,6 @@ def apply_ui():
         font-family: 'Inter', sans-serif;
     }}
 
-    /* Header premium */
     .app-header {{
         background: linear-gradient(135deg, rgba(74,0,224,0.60), rgba(142,45,226,0.35));
         border: 1px solid {C_GOLD_SOFT};
@@ -97,7 +92,6 @@ def apply_ui():
         box-shadow: 0 0 18px rgba(212,175,55,0.40);
     }}
 
-    /* Cards / forms */
     div[data-testid="stForm"], div[data-testid="stExpander"], div[data-testid="stMetric"] {{
         background: {C_SURFACE} !important;
         border: 1px solid {C_GOLD_SOFT} !important;
@@ -107,7 +101,6 @@ def apply_ui():
         backdrop-filter: blur(10px);
     }}
 
-    /* Dataframes */
     div[data-testid="stDataFrame"] {{
         background: {C_SURFACE_2} !important;
         border: 1px solid rgba(255,255,255,0.10) !important;
@@ -116,7 +109,6 @@ def apply_ui():
         backdrop-filter: blur(10px);
     }}
 
-    /* FIX do card apagado (st.metric) */
     div[data-testid="stMetric"] * {{
         color: {C_TEXT} !important;
         opacity: 1 !important;
@@ -126,7 +118,6 @@ def apply_ui():
         color: {C_MUTED} !important;
     }}
 
-    /* Inputs */
     input, textarea, div[data-baseweb="select"] {{
         background-color: rgba(255,255,255,0.92) !important;
         color: #101018 !important;
@@ -135,7 +126,6 @@ def apply_ui():
         font-weight: 500 !important;
     }}
 
-    /* Buttons com glow */
     .stButton>button {{
         background: linear-gradient(90deg, {C_GOLD}, #B8860B) !important;
         color: #0B0B10 !important;
@@ -156,7 +146,7 @@ def apply_ui():
           0 0 24px rgba(142,45,226,0.20);
     }}
 
-    /* Sidebar elegante (AGORA OPACA) */
+    /* Sidebar opaca */
     section[data-testid="stSidebar"] {{
         background: #0B0B10 !important;
         border-right: 1px solid rgba(212,175,55,0.30) !important;
@@ -169,7 +159,7 @@ def apply_ui():
         color: {C_TEXT} !important;
     }}
 
-    /* Barra para arrastar (resizer) */
+    /* Barra de arrastar */
     #sidebar-resizer {{
         position: absolute;
         top: 0;
@@ -228,19 +218,57 @@ def header():
         unsafe_allow_html=True
     )
 
-# (Mantidas, mas não usadas — pra não mexer no resto)
-def logo_exists() -> bool:
-    return Path(LOGO_PATH).exists()
+# =========================================================
+# UTIL: resizer da sidebar
+# =========================================================
+def sidebar_resizer():
+    components.html(
+        """
+        <script>
+          (function () {
+            const sidebar = parent.document.querySelector("section[data-testid='stSidebar']");
+            if (!sidebar) return;
+            if (parent.document.getElementById("sidebar-resizer")) return;
 
-def show_logo(where="main", width=260):
-    if logo_exists():
-        if where == "sidebar":
-            st.sidebar.image(LOGO_PATH, use_container_width=True)
-        else:
-            st.image(LOGO_PATH, width=width)
+            const resizer = parent.document.createElement("div");
+            resizer.id = "sidebar-resizer";
+            sidebar.appendChild(resizer);
+
+            let isResizing = false;
+
+            resizer.addEventListener("mousedown", (e) => {
+              e.preventDefault();
+              isResizing = true;
+              parent.document.body.style.cursor = "col-resize";
+            });
+
+            parent.document.addEventListener("mousemove", (e) => {
+              if (!isResizing) return;
+
+              let newWidth = e.clientX;
+              const minW = 240;
+              const maxW = 520;
+              newWidth = Math.max(minW, Math.min(maxW, newWidth));
+
+              sidebar.style.width = newWidth + "px";
+              sidebar.style.minWidth = newWidth + "px";
+              sidebar.style.maxWidth = newWidth + "px";
+              sidebar.style.flex = "0 0 " + newWidth + "px";
+            });
+
+            parent.document.addEventListener("mouseup", () => {
+              if (!isResizing) return;
+              isResizing = false;
+              parent.document.body.style.cursor = "";
+            });
+          })();
+        </script>
+        """,
+        height=0,
+    )
 
 # =========================================================
-# REGRA: comissão só da Evelyn (50% do que ela fizer)
+# COMISSÃO: Evelyn 50%
 # =========================================================
 def calc_comissao(profissional: str, valor_venda: float) -> float:
     if profissional.strip().lower() == "evelyn":
@@ -248,7 +276,7 @@ def calc_comissao(profissional: str, valor_venda: float) -> float:
     return 0.0
 
 # =========================================================
-# FUNÇÕES DE MÊS/ANO (controle mês a mês)
+# FUNÇÕES DE MÊS/ANO
 # =========================================================
 MESES_PT = [
     "Janeiro","Fevereiro","Março","Abril","Maio","Junho",
@@ -267,7 +295,7 @@ def date_iso(d: date) -> str:
     return d.isoformat()
 
 # =========================================================
-# DB + MIGRAÇÃO
+# DB
 # =========================================================
 def init_db():
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)
@@ -340,69 +368,19 @@ def open_whatsapp(link):
 # APP
 # =========================================================
 apply_ui()
-
-# RESIZER (barra para arrastar a sidebar) - DIRETO NO CÓDIGO
-components.html(
-    """
-    <script>
-      (function () {
-        const sidebar = parent.document.querySelector("section[data-testid='stSidebar']");
-        if (!sidebar) return;
-
-        if (parent.document.getElementById("sidebar-resizer")) return;
-
-        const resizer = parent.document.createElement("div");
-        resizer.id = "sidebar-resizer";
-        sidebar.appendChild(resizer);
-
-        let isResizing = false;
-
-        resizer.addEventListener("mousedown", (e) => {
-          e.preventDefault();
-          isResizing = true;
-          parent.document.body.style.cursor = "col-resize";
-        });
-
-        parent.document.addEventListener("mousemove", (e) => {
-          if (!isResizing) return;
-
-          let newWidth = e.clientX;
-          const minW = 240;
-          const maxW = 520;
-          newWidth = Math.max(minW, Math.min(maxW, newWidth));
-
-          sidebar.style.width = newWidth + "px";
-          sidebar.style.minWidth = newWidth + "px";
-          sidebar.style.maxWidth = newWidth + "px";
-          sidebar.style.flex = "0 0 " + newWidth + "px";
-        });
-
-        parent.document.addEventListener("mouseup", () => {
-          if (!isResizing) return;
-          isResizing = false;
-          parent.document.body.style.cursor = "";
-        });
-      })();
-    </script>
-    """,
-    height=0,
-)
+sidebar_resizer()
 
 if "auth" not in st.session_state:
     st.session_state.auth = False
 
-# Esconde sidebar na tela de login
+# Login
 if not st.session_state.auth:
     st.markdown(
         "<style>section[data-testid='stSidebar']{display:none !important;}</style>",
         unsafe_allow_html=True
     )
 
-if not st.session_state.auth:
     st.markdown("<div class='login-wrap'><div class='login-card'>", unsafe_allow_html=True)
-
-    # (REMOVIDO) Logo no login
-
     st.markdown(f"<div class='login-title'>{APP_NAME}</div>", unsafe_allow_html=True)
     st.markdown("<div class='login-sub'>Acesso restrito ao sistema interno.</div>", unsafe_allow_html=True)
 
@@ -413,7 +391,7 @@ if not st.session_state.auth:
     with colA:
         entrar = st.button("Entrar")
     with colB:
-        st.caption("")  # removido o texto de dica da logo
+        st.caption("")
 
     if entrar:
         if u.strip().lower() == "artmax" and s.strip() == "gesini123":
@@ -425,32 +403,32 @@ if not st.session_state.auth:
     st.markdown("</div></div>", unsafe_allow_html=True)
     st.stop()
 
-# Banner topo
+# Header
 header()
 
-# (REMOVIDO) Logo na sidebar
-st.sidebar.markdown("---")
-
-# Controle mês a mês global (sidebar)
+# =========================================================
+# Sidebar: filtro mês/ano + menu
+# =========================================================
 today = date.today()
 default_year = today.year
 default_month = today.month
 
+st.sidebar.markdown("### 📅 Filtro")
 year = st.sidebar.selectbox("Ano", list(range(default_year - 2, default_year + 1)), index=2)
 month_name = st.sidebar.selectbox("Mês", MESES_PT, index=default_month - 1)
 month = MESES_PT.index(month_name) + 1
 
 start_m, end_m = month_range(year, month)
-
 st.sidebar.caption(f"Período: {start_m.strftime('%d/%m/%Y')} → {(end_m - timedelta(days=1)).strftime('%d/%m/%Y')}")
+st.sidebar.markdown("---")
 
 menu = st.sidebar.radio(
     "Menu",
-    ["Agenda", "Robô de Lembretes", "Checkout", "Despesas", "Relatórios (BI)"]
+    ["Agenda", "Robô de Lembretes", "Checkout", "Despesas", "Vendas (Excluir/Filtrar)", "Relatórios (BI)"]
 )
 
 # =========================================================
-# Agenda
+# AGENDA
 # =========================================================
 if menu == "Agenda":
     st.subheader("Novo agendamento")
@@ -500,31 +478,25 @@ if menu == "Agenda":
     else:
         st.dataframe(df_ag, use_container_width=True)
 
-        st.markdown("#### ✨ Excluir agendamento")
-        st.caption("Selecione pelo ID e confirme para excluir.")
+        with st.expander("🧹 Excluir agendamentos (seleção múltipla)"):
+            st.caption("Selecione um ou mais IDs e exclua de uma vez.")
 
-        ids = df_ag["id"].tolist()
-        col1, col2, col3 = st.columns([1.2, 2.4, 1.4])
+            # Mostrar últimos primeiro (mês)
+            df_ag2 = df_ag.sort_values(["data", "hora", "id"], ascending=[False, False, False]).copy()
+            options = df_ag2["id"].tolist()
 
-        with col1:
-            id_del = st.selectbox("ID", ids)
+            ids_del = st.multiselect("Selecione os IDs para excluir", options=options)
+            confirm = st.checkbox("Confirmar exclusão", key="conf_del_ag_multi")
 
-        with col2:
-            row = df_ag[df_ag["id"] == id_del].iloc[0]
-            st.write(
-                f"📌 **{row['data']} {row['hora']}** — **{row['cliente']}** • {row['servico']} • {row['profissional']}"
-            )
-
-        with col3:
-            confirm = st.checkbox("Confirmar exclusão", key="confirm_del_agenda")
-            if st.button("Excluir", disabled=not confirm):
-                db.execute("DELETE FROM agenda WHERE id = ?", (int(id_del),))
+            if st.button("Excluir selecionados", disabled=(not confirm or len(ids_del) == 0)):
+                q = f"DELETE FROM agenda WHERE id IN ({','.join(['?']*len(ids_del))})"
+                db.execute(q, [int(x) for x in ids_del])
                 db.commit()
-                st.success("Agendamento excluído.")
+                st.success(f"Excluídos: {len(ids_del)} agendamento(s).")
                 st.rerun()
 
 # =========================================================
-# Robô de lembretes (hoje)
+# ROBÔ DE LEMBRETES
 # =========================================================
 elif menu == "Robô de Lembretes":
     st.subheader("Agendamentos de hoje")
@@ -543,7 +515,7 @@ elif menu == "Robô de Lembretes":
                     st.link_button("Abrir WhatsApp (fallback)", link)
 
 # =========================================================
-# Checkout
+# CHECKOUT
 # =========================================================
 elif menu == "Checkout":
     st.subheader("Finalizar atendimento")
@@ -594,7 +566,7 @@ elif menu == "Checkout":
         st.dataframe(df_vm, use_container_width=True)
 
 # =========================================================
-# Despesas
+# DESPESAS
 # =========================================================
 elif menu == "Despesas":
     st.subheader("Registrar despesa")
@@ -629,7 +601,75 @@ elif menu == "Despesas":
         st.dataframe(df_gm, use_container_width=True)
 
 # =========================================================
-# BI (mês a mês)
+# VENDAS: FILTRAR + EXCLUIR EM LOTE (últimos processos)
+# =========================================================
+elif menu == "Vendas (Excluir/Filtrar)":
+    st.subheader("Vendas do mês (filtrar e excluir)")
+
+    df_v = pd.read_sql(
+        "SELECT * FROM vendas WHERE data >= ? AND data < ? ORDER BY data DESC, id DESC",
+        db,
+        params=[date_iso(start_m), date_iso(end_m)]
+    )
+
+    if df_v.empty:
+        st.info("Nenhuma venda nesse mês.")
+        st.stop()
+
+    # Filtros
+    c1, c2, c3 = st.columns([1.2, 1.2, 2.2])
+    with c1:
+        f_prof = st.selectbox("Profissional", ["Todos"] + PROFISSIONAIS)
+    with c2:
+        f_serv = st.selectbox("Serviço", ["Todos"] + SERVICOS)
+    with c3:
+        f_cli = st.text_input("Buscar cliente (parte do nome)", placeholder="Ex: Maria")
+
+    df_f = df_v.copy()
+    if f_prof != "Todos":
+        df_f = df_f[df_f["profissional"] == f_prof]
+    if f_serv != "Todos":
+        df_f = df_f[df_f["servico"] == f_serv]
+    if f_cli.strip():
+        df_f = df_f[df_f["cliente"].str.contains(f_cli.strip(), case=False, na=False)]
+
+    # Mostrar tabela filtrada
+    st.dataframe(df_f, use_container_width=True)
+
+    st.markdown("### 🧹 Excluir últimos processos do mês (vendas)")
+    st.caption("Selecione quantos últimos registros você quer listar para excluir (por padrão, vem os mais recentes).")
+
+    colA, colB = st.columns([1.2, 2.8])
+    with colA:
+        qtd = st.number_input("Quantos últimos registros mostrar", min_value=5, max_value=200, value=20, step=5)
+    with colB:
+        st.caption("Dica: você pode filtrar acima (profissional/serviço/cliente) e depois excluir só os que aparecerem.")
+
+    df_last = df_f.sort_values(["data", "id"], ascending=[False, False]).head(int(qtd)).copy()
+
+    # Lista com label bonita
+    def label_row(r):
+        return f"ID {r['id']} • {r['data']} • {r['cliente']} • {r['servico']} • {r['profissional']} • R$ {float(r['valor']):.2f}"
+
+    options = df_last["id"].tolist()
+    labels = {int(r["id"]): label_row(r) for _, r in df_last.iterrows()}
+
+    selected = st.multiselect(
+        "Selecione as vendas para excluir",
+        options=options,
+        format_func=lambda x: labels.get(int(x), f"ID {x}")
+    )
+
+    confirm = st.checkbox("Confirmo que quero excluir permanentemente essas vendas.", key="conf_del_vendas_multi")
+    if st.button("Excluir vendas selecionadas", disabled=(not confirm or len(selected) == 0)):
+        q = f"DELETE FROM vendas WHERE id IN ({','.join(['?']*len(selected))})"
+        db.execute(q, [int(x) for x in selected])
+        db.commit()
+        st.success(f"Excluídas: {len(selected)} venda(s).")
+        st.rerun()
+
+# =========================================================
+# BI
 # =========================================================
 elif menu == "Relatórios (BI)":
     st.subheader("Resumo do mês selecionado")
@@ -657,7 +697,6 @@ elif menu == "Relatórios (BI)":
 
     lucro = total_vendas - total_comissao - total_gastos
 
-    # Comissão Evelyn (agora 50% do que ela fez, pois comissao já vem calculada)
     if not df_v.empty:
         df_eve = df_v[df_v["profissional"].str.lower() == "evelyn"]
         comissao_evelyn = float(df_eve["comissao"].sum()) if not df_eve.empty else 0.0
