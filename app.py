@@ -401,3 +401,4 @@ elif menu == "📊 Business Intelligence":
         st.markdown("### 🧾 Últimas vendas")
         df_last = df_v.sort_values(["data", "id"], ascending=[False, False]).head(25)
         st.dataframe(df_last, use_container_width=True)
+        
