@@ -5,7 +5,6 @@ import streamlit.components.v1 as components
 import urllib.parse
 import plotly.express as px
 from datetime import date
-from typing import Dict, Any
 
 # =========================================================
 # CONFIG
@@ -13,73 +12,95 @@ from typing import Dict, Any
 APP_NAME = "Artmax Cabeleleiros"
 DB_PATH = "artmax.db"
 
-st.set_page_config(page_title=APP_NAME, layout="wide", page_icon="🟦")
+st.set_page_config(page_title=APP_NAME, layout="wide", page_icon="👑")
 
 # =========================================================
-# UI (formal / profissional)
+# PALETA (roxo + dourado + preto + branco)
 # =========================================================
-COLOR_BG = "#0B1220"
-COLOR_SURFACE = "rgba(255,255,255,0.06)"
-COLOR_BORDER = "rgba(255,255,255,0.10)"
-COLOR_TEXT = "rgba(255,255,255,0.92)"
-COLOR_MUTED = "rgba(255,255,255,0.72)"
-COLOR_ACCENT = "#8AB4F8"  # azul leve, formal
+C_BG = "#0B0B10"                 # preto elegante
+C_SURFACE = "rgba(255,255,255,0.05)"
+C_BORDER = "rgba(212,175,55,0.22)"  # dourado suave
+C_TEXT = "rgba(255,255,255,0.92)"
+C_MUTED = "rgba(255,255,255,0.70)"
 
+C_PURPLE_1 = "#4A00E0"
+C_PURPLE_2 = "#8E2DE2"
+C_GOLD = "#D4AF37"
+C_WHITE = "#FFFFFF"
+
+PROFISSIONAIS = ["Eunides", "Evelyn"]
+SERVICOS = ["Escova", "Progressiva", "Luzes", "Coloração", "Botox", "Corte", "Outros"]
+
+# =========================================================
+# UI
+# =========================================================
 def apply_ui():
     st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 
     .stApp {{
-        background: {COLOR_BG};
-        color: {COLOR_TEXT};
+        background: radial-gradient(circle at 30% 0%, rgba(142,45,226,0.22), rgba(11,11,16,0.85) 45%), {C_BG};
+        color: {C_TEXT};
         font-family: 'Inter', sans-serif;
     }}
 
-    /* Header clean */
+    /* Header: roxo + dourado */
     .app-header {{
-        background: linear-gradient(180deg, rgba(138,180,248,0.18), rgba(255,255,255,0.00));
-        border: 1px solid {COLOR_BORDER};
+        background: linear-gradient(135deg, rgba(74,0,224,0.55), rgba(142,45,226,0.35));
+        border: 1px solid {C_BORDER};
         padding: 18px 22px;
-        border-radius: 16px;
+        border-radius: 18px;
         margin-bottom: 18px;
+        box-shadow: 0 12px 28px rgba(0,0,0,0.45);
     }}
     .app-title {{
         font-size: 22px;
         font-weight: 600;
         letter-spacing: 0.2px;
-        color: {COLOR_TEXT};
+        color: {C_WHITE};
         margin: 0;
         line-height: 1.2;
     }}
     .app-sub {{
         font-size: 13px;
-        color: {COLOR_MUTED};
+        color: {C_MUTED};
         margin-top: 6px;
+    }}
+    .gold-dot {{
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        background: {C_GOLD};
+        border-radius: 50%;
+        margin-right: 10px;
+        box-shadow: 0 0 18px rgba(212,175,55,0.35);
     }}
 
     /* Cards / forms */
     div[data-testid="stForm"], div[data-testid="stExpander"], div[data-testid="stMetric"], .stTable {{
-        background: {COLOR_SURFACE} !important;
-        border: 1px solid {COLOR_BORDER} !important;
-        border-radius: 16px !important;
+        background: {C_SURFACE} !important;
+        border: 1px solid {C_BORDER} !important;
+        border-radius: 18px !important;
         padding: 18px !important;
-        color: {COLOR_TEXT} !important;
+        color: {C_TEXT} !important;
+        backdrop-filter: blur(10px);
     }}
 
-    /* FIX DO SEU PRINT: força contraste do st.metric */
+    /* FIX do seu print: garante contraste do st.metric */
     div[data-testid="stMetric"] * {{
-        color: {COLOR_TEXT} !important;
+        color: {C_TEXT} !important;
         opacity: 1 !important;
+        filter: none !important;
     }}
     div[data-testid="stMetric"] label, div[data-testid="stMetric"] small {{
-        color: {COLOR_MUTED} !important;
+        color: {C_MUTED} !important;
     }}
 
     /* Inputs */
     input, textarea, div[data-baseweb="select"] {{
         background-color: rgba(255,255,255,0.92) !important;
-        color: #0B1220 !important;
+        color: #101018 !important;
         border-radius: 12px !important;
         font-size: 14px !important;
         font-weight: 500 !important;
@@ -87,27 +108,27 @@ def apply_ui():
 
     /* Buttons */
     .stButton>button {{
-        background: {COLOR_ACCENT} !important;
-        color: #0B1220 !important;
+        background: linear-gradient(90deg, {C_GOLD}, #B8860B) !important;
+        color: #0B0B10 !important;
         border: none !important;
         border-radius: 12px;
         height: 46px;
-        font-weight: 600;
+        font-weight: 700;
         transition: 0.15s;
         text-transform: none;
     }}
     .stButton>button:hover {{
         transform: translateY(-1px);
-        box-shadow: 0 8px 22px rgba(138,180,248,0.18);
+        box-shadow: 0 10px 24px rgba(212,175,55,0.22);
     }}
 
-    /* Sidebar clean */
+    /* Sidebar */
     section[data-testid="stSidebar"] {{
-        background: rgba(255,255,255,0.03) !important;
-        border-right: 1px solid {COLOR_BORDER};
+        background: linear-gradient(180deg, rgba(74,0,224,0.18), rgba(11,11,16,0.95)) !important;
+        border-right: 1px solid rgba(212,175,55,0.16);
     }}
     section[data-testid="stSidebar"] * {{
-        color: {COLOR_TEXT} !important;
+        color: {C_TEXT} !important;
     }}
     </style>
     """, unsafe_allow_html=True)
@@ -116,7 +137,7 @@ def header():
     st.markdown(
         f"""
         <div class="app-header">
-            <div class="app-title">{APP_NAME}</div>
+            <div class="app-title"><span class="gold-dot"></span>{APP_NAME}</div>
             <div class="app-sub">Agenda • Atendimento • Financeiro • Relatórios</div>
         </div>
         """,
@@ -124,34 +145,12 @@ def header():
     )
 
 # =========================================================
-# COMISSÃO POR PROCEDIMENTO (VOCÊ VAI PREENCHER)
-# Pode ser:
-# - percentual (rate): ex.: 0.35 = 35%
-# - valor fixo (fixed): ex.: 60.0 = R$ 60 por procedimento
+# REGRA: repasse só da Evelyn (100% do que ela fizer)
 # =========================================================
-COMMISSION_RULES: Dict[str, Dict[str, Any]] = {
-    # EXEMPLOS — TROQUE PELOS VALORES CORRETOS QUE VOCÊ VAI ME PASSAR:
-    "Escova":      {"type": "fixed", "value": 0.0},
-    "Progressiva": {"type": "fixed", "value": 0.0},
-    "Luzes":       {"type": "fixed", "value": 0.0},
-    "Coloração":   {"type": "fixed", "value": 0.0},
-    "Botox":       {"type": "fixed", "value": 0.0},
-    "Corte":       {"type": "fixed", "value": 0.0},
-    "Outros":      {"type": "rate",  "value": 0.0},  # exemplo: percentual
-}
-
-SERVICOS = list(COMMISSION_RULES.keys())
-PROFISSIONAIS = ["Eunides", "Evelyn"]
-
-def calc_repasse(servico: str, valor_venda: float) -> float:
-    rule = COMMISSION_RULES.get(servico, {"type": "rate", "value": 0.0})
-    t = rule.get("type")
-    v = float(rule.get("value", 0.0))
-    if t == "fixed":
-        return max(0.0, v)
-    if t == "rate":
-        return max(0.0, valor_venda * v)
-    return 0.0
+def calc_repasse(profissional: str, valor_venda: float) -> float:
+    if profissional.strip().lower() == "evelyn":
+        return float(valor_venda)  # 100% dela
+    return 0.0  # Eunides (dona) = sem repasse
 
 # =========================================================
 # DB + MIGRAÇÃO
@@ -192,7 +191,6 @@ def init_db():
         )
     """)
 
-    # garante coluna repasse em bases antigas
     cols = [r[1] for r in conn.execute("PRAGMA table_info(vendas)").fetchall()]
     if "repasse" not in cols:
         conn.execute("ALTER TABLE vendas ADD COLUMN repasse REAL DEFAULT 0")
@@ -208,11 +206,10 @@ db = init_db()
 def build_whatsapp_link(nome, tel, servico, hora="", tipo="confirmacao"):
     if not tel:
         return None
-
     msgs = {
-        "confirmacao": f"Olá {nome}. Confirmamos seu horário para {servico} às {hora}.",
-        "lembrete": f"Olá {nome}. Lembrete do seu horário hoje às {hora} ({servico}).",
-        "agradecimento": f"Obrigado pela preferência, {nome}. Foi um prazer atender você ({servico})."
+        "confirmacao": f"Olá {nome}! Confirmamos seu horário para {servico} às {hora}.",
+        "lembrete": f"Olá {nome}! Lembrete do seu horário hoje às {hora} ({servico}).",
+        "agradecimento": f"Obrigada pela preferência, {nome}! Foi um prazer atender você ({servico})."
     }
     msg = msgs.get(tipo, "")
     tel_limpo = "".join(filter(str.isdigit, tel))
@@ -340,7 +337,7 @@ elif menu == "Checkout":
                 st.error("Informe um valor maior que zero.")
                 st.stop()
 
-            repasse = calc_repasse(v_serv, float(v_valor))
+            repasse = calc_repasse(v_prof, float(v_valor))
 
             db.execute(
                 "INSERT INTO vendas (data, cliente, valor, servico, profissional, repasse) VALUES (?,?,?,?,?,?)",
@@ -351,7 +348,11 @@ elif menu == "Checkout":
             link = build_whatsapp_link(v_cli.strip(), v_tel.strip(), v_serv, "", "agradecimento")
             open_whatsapp(link)
 
-            st.success(f"Venda registrada. Repasse calculado: R$ {repasse:.2f}")
+            if v_prof == "Evelyn":
+                st.success(f"Venda registrada. **Evelyn recebeu (repasse): R$ {repasse:.2f}**")
+            else:
+                st.success("Venda registrada (Eunides).")
+
             if link:
                 st.link_button("Abrir WhatsApp (se não abriu automaticamente)", link)
 
@@ -403,15 +404,26 @@ elif menu == "Relatórios (BI)":
     total_vendas = float(df_v["valor"].sum()) if not df_v.empty else 0.0
     total_repasse = float(df_v["repasse"].sum()) if not df_v.empty else 0.0
     total_gastos = float(df_g["valor"].sum()) if not df_g.empty else 0.0
+
+    # lucro do salão = tudo que entrou - repasse Evelyn - despesas
     lucro = total_vendas - total_repasse - total_gastos
 
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Faturamento", f"R$ {total_vendas:.2f}")
-    c2.metric("Repasse a profissionais", f"R$ {total_repasse:.2f}")
-    c3.metric("Despesas", f"R$ {total_gastos:.2f}")
-    c4.metric("Lucro", f"R$ {lucro:.2f}")
+    # Evelyn: quanto fez / quanto mereceu
+    if not df_v.empty:
+        df_eve = df_v[df_v["profissional"].str.lower() == "evelyn"]
+        evelyn_fez = float(df_eve["valor"].sum()) if not df_eve.empty else 0.0
+        evelyn_mereceu = float(df_eve["repasse"].sum()) if not df_eve.empty else 0.0
+    else:
+        evelyn_fez = 0.0
+        evelyn_mereceu = 0.0
 
-    st.subheader("Vendas por profissional")
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Faturamento total", f"R$ {total_vendas:.2f}")
+    c2.metric("Evelyn fez", f"R$ {evelyn_fez:.2f}")
+    c3.metric("Evelyn mereceu (repasse)", f"R$ {evelyn_mereceu:.2f}")
+    c4.metric("Lucro do salão", f"R$ {lucro:.2f}")
+
+    st.subheader("Detalhe por profissional")
     if df_v.empty:
         st.info("Sem vendas registradas.")
     else:
