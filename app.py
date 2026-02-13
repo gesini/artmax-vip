@@ -42,7 +42,7 @@ C_GOLD_SOFT = "rgba(212,175,55,0.22)"
 C_WHITE = "#FFFFFF"
 
 PROFISSIONAIS = ["Eunides", "Evelyn"]
-# ✅ Atualizado: inclui Sobrancelha e Relaxamento
+# ✅ Lista base de serviços
 SERVICOS = ["Escova", "Progressiva", "Luzes", "Coloração", "Botox", "Relaxamento", "Sobrancelha", "Corte", "Outros"]
 
 # =========================================================
@@ -281,7 +281,7 @@ def sidebar_resizer():
     )
 
 # =========================================================
-# COMISSÃO: Evelyn por serviço
+# COMISSÃO: Evelyn por serviço (ATUALIZADO)
 # =========================================================
 COMISSAO_EVELYN = {
     "Escova": 0.50,
@@ -492,7 +492,12 @@ if menu == "Agenda":
         cli = c1.text_input("Cliente")
         tel = c2.text_input("WhatsApp")
 
-        serv = st.selectbox("Procedimento", SERVICOS)
+        serv_base = st.selectbox("Procedimento", SERVICOS)
+        # ✅ NOVO: Campo dinâmico para 'Outros'
+        outro_serv = ""
+        if serv_base == "Outros":
+            outro_serv = st.text_input("Especifique o serviço", placeholder="Ex: Hidratação Especial")
+
         prof = st.selectbox("Profissional", PROFISSIONAIS)
 
         c3, c4 = st.columns(2)
@@ -507,13 +512,16 @@ if menu == "Agenda":
                 st.error("Informe o WhatsApp.")
                 st.stop()
 
+            # ✅ Define o serviço final
+            serv_final = outro_serv.strip() if serv_base == "Outros" and outro_serv.strip() else serv_base
+
             db.execute(
                 "INSERT INTO agenda (data, hora, cliente, telefone, servico, profissional) VALUES (?,?,?,?,?,?)",
-                (dt.isoformat(), hr.strftime("%H:%M"), cli.strip(), tel.strip(), serv, prof)
+                (dt.isoformat(), hr.strftime("%H:%M"), cli.strip(), tel.strip(), serv_final, prof)
             )
             db.commit()
 
-            link = build_whatsapp_link(cli.strip(), tel.strip(), serv, hr.strftime("%H:%M"), "confirmacao")
+            link = build_whatsapp_link(cli.strip(), tel.strip(), serv_final, hr.strftime("%H:%M"), "confirmacao")
             open_whatsapp(link)
             st.success("Agendamento registrado com sucesso.")
             if link:
@@ -576,7 +584,13 @@ elif menu == "Checkout":
     with st.form("caixa", clear_on_submit=True):
         v_cli = st.text_input("Cliente")
         v_tel = st.text_input("WhatsApp (opcional)")
-        v_serv = st.selectbox("Procedimento", SERVICOS)
+        
+        v_serv_base = st.selectbox("Procedimento", SERVICOS)
+        # ✅ NOVO: Campo dinâmico para 'Outros' no checkout
+        v_outro_serv = ""
+        if v_serv_base == "Outros":
+            v_outro_serv = st.text_input("Qual o serviço realizado?", placeholder="Ex: Lavagem + Massagem")
+
         v_prof = st.selectbox("Profissional", PROFISSIONAIS)
         v_valor = st.number_input("Valor (R$)", min_value=0.0, format="%.2f")
 
@@ -588,16 +602,19 @@ elif menu == "Checkout":
                 st.error("Informe um valor maior que zero.")
                 st.stop()
 
-            # ✅ Atualizado: comissão depende do serviço
-            comissao = calc_comissao(v_prof, v_serv, float(v_valor))
+            # ✅ Define o serviço final para gravação
+            v_serv_final = v_outro_serv.strip() if v_serv_base == "Outros" and v_outro_serv.strip() else v_serv_base
+
+            # ✅ Atualizado: comissão depende do serviço e da nova tabela de porcentagem
+            comissao = calc_comissao(v_prof, v_serv_final, float(v_valor))
 
             db.execute(
                 "INSERT INTO vendas (data, cliente, valor, servico, profissional, comissao) VALUES (?,?,?,?,?,?)",
-                (date.today().isoformat(), v_cli.strip(), float(v_valor), v_serv, v_prof, float(comissao))
+                (date.today().isoformat(), v_cli.strip(), float(v_valor), v_serv_final, v_prof, float(comissao))
             )
             db.commit()
 
-            link = build_whatsapp_link(v_cli.strip(), v_tel.strip(), v_serv, "", "agradecimento")
+            link = build_whatsapp_link(v_cli.strip(), v_tel.strip(), v_serv_final, "", "agradecimento")
             open_whatsapp(link)
 
             if v_prof == "Evelyn":
@@ -655,7 +672,7 @@ elif menu == "Despesas":
         st.dataframe(df_gm, use_container_width=True)
 
 # =========================================================
-# VENDAS: FILTRAR + EXCLUIR EM LOTE (últimos processos)
+# VENDAS: FILTRAR + EXCLUIR EM LOTE
 # =========================================================
 elif menu == "Vendas (Excluir/Filtrar)":
     st.subheader("Vendas do mês (filtrar e excluir)")
@@ -690,13 +707,13 @@ elif menu == "Vendas (Excluir/Filtrar)":
     st.dataframe(df_f, use_container_width=True)
 
     st.markdown("### 🧹 Excluir últimos processos do mês (vendas)")
-    st.caption("Selecione quantos últimos registros você quer listar para excluir (por padrão, vem os mais recentes).")
+    st.caption("Selecione quantos últimos registros você quer listar para excluir.")
 
     colA, colB = st.columns([1.2, 2.8])
     with colA:
         qtd = st.number_input("Quantos últimos registros mostrar", min_value=5, max_value=200, value=20, step=5)
     with colB:
-        st.caption("Dica: você pode filtrar acima (profissional/serviço/cliente) e depois excluir só os que aparecerem.")
+        st.caption("Dica: você pode filtrar acima e depois excluir só os que aparecerem.")
 
     df_last = df_f.sort_values(["data", "id"], ascending=[False, False]).head(int(qtd)).copy()
 
@@ -721,7 +738,7 @@ elif menu == "Vendas (Excluir/Filtrar)":
         st.rerun()
 
 # =========================================================
-# BI
+# RELATÓRIOS (BI)
 # =========================================================
 elif menu == "Relatórios (BI)":
     st.subheader("Resumo do mês selecionado")
@@ -769,7 +786,7 @@ elif menu == "Relatórios (BI)":
     else:
         resumo = (
             df_v.groupby("profissional", as_index=False)
-               .agg(vendas=("valor", "sum"), comissao=("comissao", "sum"))
+                .agg(vendas=("valor", "sum"), comissao=("comissao", "sum"))
         )
         st.dataframe(resumo, use_container_width=True)
 
@@ -805,7 +822,7 @@ elif menu == "Relatórios (BI)":
     if not HAS_SHEETS:
         st.info("Para exportar para Google Sheets, instale: pip install gspread google-auth.")
     else:
-        st.caption("Requer st.secrets['gcp_service_account'] configurado (JSON da Service Account).")
+        st.caption("Requer st.secrets['gcp_service_account'] configurado.")
 
         if st.button("📄 Criar planilha no Google Sheets com o mês selecionado"):
             try:
