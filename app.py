@@ -487,20 +487,20 @@ menu = st.sidebar.radio(
 if menu == "Agenda":
     st.subheader("Novo agendamento")
 
+    # ✅ FORA do form (pra atualizar na hora)
+    serv_base = st.selectbox("Procedimento", SERVICOS, key="serv_base_ag")
+
+    outro_key = "outro_serv_ag"
+    outro_serv = ""
+    if serv_base == "Outros":
+        outro_serv = st.text_input("Especifique o serviço", placeholder="Ex: Hidratação Especial", key=outro_key)
+    else:
+        st.session_state[outro_key] = ""
+
     with st.form("ag", clear_on_submit=True):
         c1, c2 = st.columns(2)
         cli = c1.text_input("Cliente")
         tel = c2.text_input("WhatsApp")
-
-        serv_base = st.selectbox("Procedimento", SERVICOS)
-        
-        # ✅ NOVO: Campo dinâmico para 'Outros' - Alterado para aparecer apenas se selecionado
-        outro_key = "outro_serv_ag"
-        outro_serv = ""
-        if serv_base == "Outros":
-            outro_serv = st.text_input("Especifique o serviço", placeholder="Ex: Hidratação Especial", key=outro_key)
-        else:
-            st.session_state[outro_key] = ""
 
         prof = st.selectbox("Profissional", PROFISSIONAIS)
 
@@ -584,19 +584,19 @@ elif menu == "Robô de Lembretes":
 elif menu == "Checkout":
     st.subheader("Finalizar atendimento")
 
+    # ✅ FORA do form (pra atualizar na hora)
+    v_serv_base = st.selectbox("Procedimento", SERVICOS, key="serv_base_checkout")
+
+    v_outro_key = "outro_serv_checkout"
+    v_outro_serv = ""
+    if v_serv_base == "Outros":
+        v_outro_serv = st.text_input("Qual o serviço realizado?", placeholder="Ex: Lavagem + Massagem", key=v_outro_key)
+    else:
+        st.session_state[v_outro_key] = ""
+
     with st.form("caixa", clear_on_submit=True):
         v_cli = st.text_input("Cliente")
         v_tel = st.text_input("WhatsApp (opcional)")
-        
-        v_serv_base = st.selectbox("Procedimento", SERVICOS)
-        
-        # ✅ NOVO: Campo dinâmico para 'Outros' no checkout - Alterado para aparecer apenas se selecionado
-        v_outro_key = "outro_serv_checkout"
-        v_outro_serv = ""
-        if v_serv_base == "Outros":
-            v_outro_serv = st.text_input("Qual o serviço realizado?", placeholder="Ex: Lavagem + Massagem", key=v_outro_key)
-        else:
-            st.session_state[v_outro_key] = ""
 
         v_prof = st.selectbox("Profissional", PROFISSIONAIS)
         v_valor = st.number_input("Valor (R$)", min_value=0.0, format="%.2f")
