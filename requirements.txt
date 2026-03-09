@@ -1,6 +1,3 @@
-streamlit 
-pandas 
+streamlit
+pandas
 plotly
-psycopg2-binary
-sqlalchemy
-st-postgresql-connection
