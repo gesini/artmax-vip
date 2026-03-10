@@ -24,7 +24,7 @@ except Exception:
 APP_NAME = "Artmax Cabeleleiros"
 DB_PATH = "artmax.db"
 
-st.set_page_config(page_title=APP_NAME, layout="wide", page_icon="")
+st.set_page_config(page_title=APP_NAME, layout="wide", page_icon="💜")
 
 # =========================================================
 # PALETA (roxo + dourado + preto + branco)
@@ -42,7 +42,6 @@ C_GOLD_SOFT = "rgba(212,175,55,0.22)"
 C_WHITE = "#FFFFFF"
 
 PROFISSIONAIS = ["Eunides", "Evelyn"]
-#  Lista base de serviços
 SERVICOS = ["Escova", "Progressiva", "Luzes", "Coloração", "Botox", "Relaxamento", "Sobrancelha", "Corte", "Outros"]
 
 # =========================================================
@@ -159,7 +158,6 @@ def apply_ui():
           0 0 24px rgba(142,45,226,0.20);
     }}
 
-    /* Sidebar opaca */
     section[data-testid="stSidebar"] {{
         background: #0B0B10 !important;
         border-right: 1px solid rgba(212,175,55,0.30) !important;
@@ -172,7 +170,6 @@ def apply_ui():
         color: {C_TEXT} !important;
     }}
 
-    /* Barra de arrastar */
     #sidebar-resizer {{
         position: absolute;
         top: 0;
@@ -188,7 +185,6 @@ def apply_ui():
         background: rgba(212,175,55,0.20);
     }}
 
-    /* Login central */
     .login-wrap {{
         display: flex;
         justify-content: center;
@@ -281,7 +277,7 @@ def sidebar_resizer():
     )
 
 # =========================================================
-# COMISSÃO: Evelyn por serviço (ATUALIZADO)
+# COMISSÃO: Evelyn por serviço
 # =========================================================
 COMISSAO_EVELYN = {
     "Escova": 0.50,
@@ -302,8 +298,8 @@ def calc_comissao(profissional: str, servico: str, valor_venda: float) -> float:
 # FUNÇÕES DE MÊS/ANO
 # =========================================================
 MESES_PT = [
-    "Janeiro","Fevereiro","Março","Abril","Maio","Junho",
-    "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"
+    "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
 ]
 
 def month_range(year: int, month: int):
@@ -312,7 +308,7 @@ def month_range(year: int, month: int):
         end = date(year + 1, 1, 1)
     else:
         end = date(year, month + 1, 1)
-    return start, end  # [start, end)
+    return start, end
 
 def date_iso(d: date) -> str:
     return d.isoformat()
@@ -372,9 +368,9 @@ def build_whatsapp_link(nome, tel, servico, hora="", tipo="confirmacao"):
     if not tel:
         return None
     msgs = {
-        "confirmacao": f"Olá {nome}!  Confirmamos seu horário para {servico} às {hora}.",
-        "lembrete": f"Oi {nome}!  Lembrete do seu horário hoje às {hora} ({servico}).",
-        "agradecimento": f"Obrigada pela preferência, {nome}!  Foi um prazer atender você ({servico})."
+        "confirmacao": f"Olá {nome}! ✨ Confirmamos seu horário para {servico} às {hora}.",
+        "lembrete": f"Oi {nome}! 💜 Lembrete do seu horário hoje às {hora} ({servico}).",
+        "agradecimento": f"Obrigada pela preferência, {nome}! ✨ Foi um prazer atender você ({servico})."
     }
     msg = msgs.get(tipo, "")
     tel_limpo = "".join(filter(str.isdigit, tel))
@@ -391,7 +387,10 @@ def open_whatsapp(link):
 # Google Sheets: export mês
 # =========================================================
 def export_mes_para_sheets(df_agenda, df_vendas, df_gastos, sheet_title: str):
-    scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+    scopes = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive"
+    ]
     creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scopes)
     gc = gspread.authorize(creds)
     sh = gc.create(sheet_title)
@@ -402,6 +401,7 @@ def export_mes_para_sheets(df_agenda, df_vendas, df_gastos, sheet_title: str):
             sh.del_worksheet(ws)
         except Exception:
             pass
+
         ws = sh.add_worksheet(title=name, rows=1000, cols=30)
 
         if df is None or df.empty:
@@ -417,11 +417,13 @@ def export_mes_para_sheets(df_agenda, df_vendas, df_gastos, sheet_title: str):
     upsert_worksheet("Gastos", df_gastos)
 
     return sh.url
+
 # =========================================================
 # BACKUP CSV
 # =========================================================
 def df_to_csv_download(df: pd.DataFrame) -> bytes:
     return df.to_csv(index=False).encode("utf-8-sig")
+
 # =========================================================
 # APP
 # =========================================================
@@ -471,7 +473,7 @@ today = date.today()
 default_year = today.year
 default_month = today.month
 
-st.sidebar.markdown("###  Filtro")
+st.sidebar.markdown("### 📅 Filtro")
 year = st.sidebar.selectbox("Ano", list(range(default_year - 2, default_year + 1)), index=2)
 month_name = st.sidebar.selectbox("Mês", MESES_PT, index=default_month - 1)
 month = MESES_PT.index(month_name) + 1
@@ -479,6 +481,7 @@ month = MESES_PT.index(month_name) + 1
 start_m, end_m = month_range(year, month)
 st.sidebar.caption(f"Período: {start_m.strftime('%d/%m/%Y')} → {(end_m - timedelta(days=1)).strftime('%d/%m/%Y')}")
 st.sidebar.markdown("---")
+
 menu = st.sidebar.radio(
     "Menu",
     [
@@ -491,23 +494,28 @@ menu = st.sidebar.radio(
         "Backup"
     ]
 )
+
 # =========================================================
 # AGENDA
 # =========================================================
 if menu == "Agenda":
     st.subheader("Novo agendamento")
 
+    # FORA do form: atualiza na hora quando escolher "Outros"
+    serv_base = st.selectbox("Procedimento", SERVICOS, key="serv_base_ag")
+
+    outro_serv = ""
+    if serv_base == "Outros":
+        outro_serv = st.text_input(
+            "Especifique o serviço",
+            placeholder="Ex: Hidratação Especial",
+            key="outro_serv_ag"
+        )
+
     with st.form("ag", clear_on_submit=True):
         c1, c2 = st.columns(2)
         cli = c1.text_input("Cliente")
         tel = c2.text_input("WhatsApp")
-
-        serv_base = st.selectbox("Procedimento", SERVICOS)
-        
-        #  NOVO: Campo dinâmico para 'Outros' - Alterado para aparecer apenas se selecionado
-        outro_serv = ""
-        if serv_base == "Outros":
-            outro_serv = st.text_input("Especifique o serviço", placeholder="Ex: Hidratação Especial")
 
         prof = st.selectbox("Profissional", PROFISSIONAIS)
 
@@ -550,7 +558,7 @@ if menu == "Agenda":
     else:
         st.dataframe(df_ag, use_container_width=True)
 
-        with st.expander(" Excluir agendamentos (seleção múltipla)"):
+        with st.expander("🧹 Excluir agendamentos (seleção múltipla)"):
             st.caption("Selecione um ou mais IDs e exclua de uma vez.")
 
             df_ag2 = df_ag.sort_values(["data", "hora", "id"], ascending=[False, False, False]).copy()
@@ -560,7 +568,7 @@ if menu == "Agenda":
             confirm = st.checkbox("Confirmar exclusão", key="conf_del_ag_multi")
 
             if st.button("Excluir selecionados", disabled=(not confirm or len(ids_del) == 0)):
-                q = f"DELETE FROM agenda WHERE id IN ({','.join(['?']*len(ids_del))})"
+                q = f"DELETE FROM agenda WHERE id IN ({','.join(['?'] * len(ids_del))})"
                 db.execute(q, [int(x) for x in ids_del])
                 db.commit()
                 st.success(f"Excluídos: {len(ids_del)} agendamento(s).")
@@ -591,16 +599,20 @@ elif menu == "Robô de Lembretes":
 elif menu == "Checkout":
     st.subheader("Finalizar atendimento")
 
+    # FORA do form: atualiza na hora quando escolher "Outros"
+    v_serv_base = st.selectbox("Procedimento", SERVICOS, key="serv_base_checkout")
+
+    v_outro_serv = ""
+    if v_serv_base == "Outros":
+        v_outro_serv = st.text_input(
+            "Qual o serviço realizado?",
+            placeholder="Ex: Lavagem + Massagem",
+            key="outro_serv_checkout"
+        )
+
     with st.form("caixa", clear_on_submit=True):
         v_cli = st.text_input("Cliente")
         v_tel = st.text_input("WhatsApp (opcional)")
-        
-        v_serv_base = st.selectbox("Procedimento", SERVICOS)
-        
-        #  NOVO: Campo dinâmico para 'Outros' no checkout - Alterado para aparecer apenas se selecionado
-        v_outro_serv = ""
-        if v_serv_base == "Outros":
-            v_outro_serv = st.text_input("Qual o serviço realizado?", placeholder="Ex: Lavagem + Massagem")
 
         v_prof = st.selectbox("Profissional", PROFISSIONAIS)
         v_valor = st.number_input("Valor (R$)", min_value=0.0, format="%.2f")
@@ -626,7 +638,7 @@ elif menu == "Checkout":
             open_whatsapp(link)
 
             if v_prof == "Evelyn":
-                st.success(f"Venda registrada.  *Comissão Evelyn: R$ {comissao:.2f}*")
+                st.success(f"Venda registrada. 💜 Comissão Evelyn: R$ {comissao:.2f}")
             else:
                 st.success("Venda registrada (Eunides).")
 
@@ -695,7 +707,6 @@ elif menu == "Vendas (Excluir/Filtrar)":
         st.info("Nenhuma venda nesse mês.")
         st.stop()
 
-    # Filtros
     c1, c2, c3 = st.columns([1.2, 1.2, 2.2])
     with c1:
         f_prof = st.selectbox("Profissional", ["Todos"] + PROFISSIONAIS)
@@ -714,7 +725,7 @@ elif menu == "Vendas (Excluir/Filtrar)":
 
     st.dataframe(df_f, use_container_width=True)
 
-    st.markdown("###  Excluir últimos processos do mês (vendas)")
+    st.markdown("### 🧹 Excluir últimos processos do mês (vendas)")
     st.caption("Selecione quantos últimos registros você quer listar para excluir.")
 
     colA, colB = st.columns([1.2, 2.8])
@@ -739,7 +750,7 @@ elif menu == "Vendas (Excluir/Filtrar)":
 
     confirm = st.checkbox("Confirmo que quero excluir permanentemente essas vendas.", key="conf_del_vendas_multi")
     if st.button("Excluir vendas selecionadas", disabled=(not confirm or len(selected) == 0)):
-        q = f"DELETE FROM vendas WHERE id IN ({','.join(['?']*len(selected))})"
+        q = f"DELETE FROM vendas WHERE id IN ({','.join(['?'] * len(selected))})"
         db.execute(q, [int(x) for x in selected])
         db.commit()
         st.success(f"Excluídas: {len(selected)} venda(s).")
@@ -814,14 +825,37 @@ elif menu == "Relatórios (BI)":
             df_v.sort_values(["data", "id"], ascending=[False, False]).head(25),
             use_container_width=True
         )
-        
+
+    st.markdown("---")
+    st.subheader("Exportar para Google Sheets")
+
+    df_ag = pd.read_sql(
+        "SELECT * FROM agenda WHERE data >= ? AND data < ? ORDER BY data, hora",
+        db,
+        params=[date_iso(start_m), date_iso(end_m)]
+    )
+
+    if not HAS_SHEETS:
+        st.info("Para exportar para Google Sheets, instale: pip install gspread google-auth.")
+    else:
+        st.caption("Requer st.secrets['gcp_service_account'] configurado.")
+
+        if st.button("📄 Criar planilha no Google Sheets com o mês selecionado"):
+            try:
+                url = export_mes_para_sheets(
+                    df_ag, df_v, df_g,
+                    sheet_title=f"{APP_NAME} - {month_name}/{year}"
+                )
+                st.success("Planilha criada no Google Sheets!")
+                st.link_button("Abrir planilha", url)
+            except Exception as e:
+                st.error(f"Falha ao exportar: {e}")
+
 # =========================================================
 # BACKUP
 # =========================================================
-     
 elif menu == "Backup":
     st.subheader("Backup dos dados")
-
     st.caption("Baixe cópias de segurança da agenda, vendas e despesas.")
 
     df_ag_backup = pd.read_sql(
@@ -843,7 +877,7 @@ elif menu == "Backup":
 
     with c1:
         st.download_button(
-            " Baixar Agenda CSV",
+            "⬇️ Baixar Agenda CSV",
             data=df_to_csv_download(df_ag_backup),
             file_name="agenda_backup.csv",
             mime="text/csv"
@@ -851,7 +885,7 @@ elif menu == "Backup":
 
     with c2:
         st.download_button(
-            " Baixar Vendas CSV",
+            "⬇️ Baixar Vendas CSV",
             data=df_to_csv_download(df_v_backup),
             file_name="vendas_backup.csv",
             mime="text/csv"
@@ -859,7 +893,7 @@ elif menu == "Backup":
 
     with c3:
         st.download_button(
-            " Baixar Gastos CSV",
+            "⬇️ Baixar Gastos CSV",
             data=df_to_csv_download(df_g_backup),
             file_name="gastos_backup.csv",
             mime="text/csv"
@@ -881,16 +915,3 @@ elif menu == "Backup":
 
     with st.expander("Visualizar dados de gastos"):
         st.dataframe(df_g_backup, use_container_width=True)
-
-    # =========================
-    # Export Google Sheets
-    # =========================
-    st.markdown("---")
-    st.subheader("Exportar para Google Sheets")
-
-    df_ag = pd.read_sql(
-        "SELECT * FROM agenda WHERE data >= ? AND data < ? ORDER BY data, hora",
-        db,
-        params=[date_iso(start_m), date_iso(end_m)]
-    )
-
