@@ -24,7 +24,7 @@ except Exception:
 APP_NAME = "Artmax Cabeleleiros"
 DB_PATH = "artmax.db"
 
-st.set_page_config(page_title=APP_NAME, layout="wide", page_icon="💜")
+st.set_page_config(page_title=APP_NAME, layout="wide", page_icon="")
 
 # =========================================================
 # PALETA (roxo + dourado + preto + branco)
@@ -42,7 +42,7 @@ C_GOLD_SOFT = "rgba(212,175,55,0.22)"
 C_WHITE = "#FFFFFF"
 
 PROFISSIONAIS = ["Eunides", "Evelyn"]
-# ✅ Lista base de serviços
+#  Lista base de serviços
 SERVICOS = ["Escova", "Progressiva", "Luzes", "Coloração", "Botox", "Relaxamento", "Sobrancelha", "Corte", "Outros"]
 
 # =========================================================
@@ -372,9 +372,9 @@ def build_whatsapp_link(nome, tel, servico, hora="", tipo="confirmacao"):
     if not tel:
         return None
     msgs = {
-        "confirmacao": f"Olá {nome}! ✨ Confirmamos seu horário para {servico} às {hora}.",
-        "lembrete": f"Oi {nome}! 💜 Lembrete do seu horário hoje às {hora} ({servico}).",
-        "agradecimento": f"Obrigada pela preferência, {nome}! ✨ Foi um prazer atender você ({servico})."
+        "confirmacao": f"Olá {nome}!  Confirmamos seu horário para {servico} às {hora}.",
+        "lembrete": f"Oi {nome}!  Lembrete do seu horário hoje às {hora} ({servico}).",
+        "agradecimento": f"Obrigada pela preferência, {nome}!  Foi um prazer atender você ({servico})."
     }
     msg = msgs.get(tipo, "")
     tel_limpo = "".join(filter(str.isdigit, tel))
@@ -417,7 +417,11 @@ def export_mes_para_sheets(df_agenda, df_vendas, df_gastos, sheet_title: str):
     upsert_worksheet("Gastos", df_gastos)
 
     return sh.url
-
+# =========================================================
+# BACKUP CSV
+# =========================================================
+def df_to_csv_download(df: pd.DataFrame) -> bytes:
+    return df.to_csv(index=False).encode("utf-8-sig")
 # =========================================================
 # APP
 # =========================================================
@@ -467,7 +471,7 @@ today = date.today()
 default_year = today.year
 default_month = today.month
 
-st.sidebar.markdown("### 📅 Filtro")
+st.sidebar.markdown("###  Filtro")
 year = st.sidebar.selectbox("Ano", list(range(default_year - 2, default_year + 1)), index=2)
 month_name = st.sidebar.selectbox("Mês", MESES_PT, index=default_month - 1)
 month = MESES_PT.index(month_name) + 1
@@ -475,12 +479,18 @@ month = MESES_PT.index(month_name) + 1
 start_m, end_m = month_range(year, month)
 st.sidebar.caption(f"Período: {start_m.strftime('%d/%m/%Y')} → {(end_m - timedelta(days=1)).strftime('%d/%m/%Y')}")
 st.sidebar.markdown("---")
-
 menu = st.sidebar.radio(
     "Menu",
-    ["Agenda", "Robô de Lembretes", "Checkout", "Despesas", "Vendas (Excluir/Filtrar)", "Relatórios (BI)"]
+    [
+        "Agenda",
+        "Robô de Lembretes",
+        "Checkout",
+        "Despesas",
+        "Vendas (Excluir/Filtrar)",
+        "Relatórios (BI)",
+        "Backup"
+    ]
 )
-
 # =========================================================
 # AGENDA
 # =========================================================
@@ -494,7 +504,7 @@ if menu == "Agenda":
 
         serv_base = st.selectbox("Procedimento", SERVICOS)
         
-        # ✅ NOVO: Campo dinâmico para 'Outros' - Alterado para aparecer apenas se selecionado
+        #  NOVO: Campo dinâmico para 'Outros' - Alterado para aparecer apenas se selecionado
         outro_serv = ""
         if serv_base == "Outros":
             outro_serv = st.text_input("Especifique o serviço", placeholder="Ex: Hidratação Especial")
@@ -540,7 +550,7 @@ if menu == "Agenda":
     else:
         st.dataframe(df_ag, use_container_width=True)
 
-        with st.expander("🧹 Excluir agendamentos (seleção múltipla)"):
+        with st.expander(" Excluir agendamentos (seleção múltipla)"):
             st.caption("Selecione um ou mais IDs e exclua de uma vez.")
 
             df_ag2 = df_ag.sort_values(["data", "hora", "id"], ascending=[False, False, False]).copy()
@@ -587,7 +597,7 @@ elif menu == "Checkout":
         
         v_serv_base = st.selectbox("Procedimento", SERVICOS)
         
-        # ✅ NOVO: Campo dinâmico para 'Outros' no checkout - Alterado para aparecer apenas se selecionado
+        #  NOVO: Campo dinâmico para 'Outros' no checkout - Alterado para aparecer apenas se selecionado
         v_outro_serv = ""
         if v_serv_base == "Outros":
             v_outro_serv = st.text_input("Qual o serviço realizado?", placeholder="Ex: Lavagem + Massagem")
@@ -616,7 +626,7 @@ elif menu == "Checkout":
             open_whatsapp(link)
 
             if v_prof == "Evelyn":
-                st.success(f"Venda registrada. 💜 *Comissão Evelyn: R$ {comissao:.2f}*")
+                st.success(f"Venda registrada.  *Comissão Evelyn: R$ {comissao:.2f}*")
             else:
                 st.success("Venda registrada (Eunides).")
 
@@ -704,7 +714,7 @@ elif menu == "Vendas (Excluir/Filtrar)":
 
     st.dataframe(df_f, use_container_width=True)
 
-    st.markdown("### 🧹 Excluir últimos processos do mês (vendas)")
+    st.markdown("###  Excluir últimos processos do mês (vendas)")
     st.caption("Selecione quantos últimos registros você quer listar para excluir.")
 
     colA, colB = st.columns([1.2, 2.8])
@@ -804,6 +814,73 @@ elif menu == "Relatórios (BI)":
             df_v.sort_values(["data", "id"], ascending=[False, False]).head(25),
             use_container_width=True
         )
+        
+# =========================================================
+# BACKUP
+# =========================================================
+     
+elif menu == "Backup":
+    st.subheader("Backup dos dados")
+
+    st.caption("Baixe cópias de segurança da agenda, vendas e despesas.")
+
+    df_ag_backup = pd.read_sql(
+        "SELECT * FROM agenda ORDER BY data, hora",
+        db
+    )
+
+    df_v_backup = pd.read_sql(
+        "SELECT * FROM vendas ORDER BY data DESC, id DESC",
+        db
+    )
+
+    df_g_backup = pd.read_sql(
+        "SELECT * FROM gastos ORDER BY data DESC, id DESC",
+        db
+    )
+
+    c1, c2, c3 = st.columns(3)
+
+    with c1:
+        st.download_button(
+            " Baixar Agenda CSV",
+            data=df_to_csv_download(df_ag_backup),
+            file_name="agenda_backup.csv",
+            mime="text/csv"
+        )
+
+    with c2:
+        st.download_button(
+            " Baixar Vendas CSV",
+            data=df_to_csv_download(df_v_backup),
+            file_name="vendas_backup.csv",
+            mime="text/csv"
+        )
+
+    with c3:
+        st.download_button(
+            " Baixar Gastos CSV",
+            data=df_to_csv_download(df_g_backup),
+            file_name="gastos_backup.csv",
+            mime="text/csv"
+        )
+
+    st.markdown("---")
+    st.subheader("Resumo rápido do backup")
+
+    r1, r2, r3 = st.columns(3)
+    r1.metric("Registros da agenda", len(df_ag_backup))
+    r2.metric("Registros de vendas", len(df_v_backup))
+    r3.metric("Registros de gastos", len(df_g_backup))
+
+    with st.expander("Visualizar dados da agenda"):
+        st.dataframe(df_ag_backup, use_container_width=True)
+
+    with st.expander("Visualizar dados de vendas"):
+        st.dataframe(df_v_backup, use_container_width=True)
+
+    with st.expander("Visualizar dados de gastos"):
+        st.dataframe(df_g_backup, use_container_width=True)
 
     # =========================
     # Export Google Sheets
@@ -817,18 +894,3 @@ elif menu == "Relatórios (BI)":
         params=[date_iso(start_m), date_iso(end_m)]
     )
 
-    if not HAS_SHEETS:
-        st.info("Para exportar para Google Sheets, instale: pip install gspread google-auth.")
-    else:
-        st.caption("Requer st.secrets['gcp_service_account'] configurado.")
-
-        if st.button("📄 Criar planilha no Google Sheets com o mês selecionado"):
-            try:
-                url = export_mes_para_sheets(
-                    df_ag, df_v, df_g,
-                    sheet_title=f"{APP_NAME} - {month_name}/{year}"
-                )
-                st.success("Planilha criada no Google Sheets!")
-                st.link_button("Abrir planilha", url)
-            except Exception as e:
-                st.error(f"Falha ao exportar: {e}")
